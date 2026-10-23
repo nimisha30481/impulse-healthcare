@@ -38,6 +38,13 @@ def code(e: ClientError) -> str:
     return e.response.get("Error", {}).get("Code", "")
 
 
+def current_env() -> dict[str, str]:
+    if not ENV_FILE.exists():
+        return {}
+    pairs = (l.split("=", 1) for l in ENV_FILE.read_text(encoding="utf-8").splitlines() if "=" in l and not l.startswith("#"))
+    return {k.strip(): v.strip() for k, v in pairs if v.strip()}
+
+
 def write_env(values: dict[str, str]) -> None:
     lines = ENV_FILE.read_text(encoding="utf-8").splitlines() if ENV_FILE.exists() else [
         "# Written by scripts/aws_setup.py. Never commit this file."
@@ -284,6 +291,10 @@ def textract(s, env):
 
 
 def appsync(s, env):
+    saved = current_env()
+    if saved.get("APPSYNC_EVENTS_HTTP_ENDPOINT") and saved.get("APPSYNC_EVENTS_API_KEY"):
+        ok("AppSync Events already linked (endpoint and key in backend/.env)")
+        return
     a = s.client("appsync")
     name = f"{NAME}-events"
     api = next((x for x in a.list_apis().get("apis", []) if x["name"] == name), None)
@@ -294,9 +305,12 @@ def appsync(s, env):
         a.create_channel_namespace(apiId=api["apiId"], name="users")  # app publishes to /users/<id>
         ok("AppSync Events API created")
     else:
+        api = a.get_api(apiId=api["apiId"])["api"]  # the list summary has no "dns" endpoints
         ok("AppSync Events API already exists")
-    key = a.create_api_key(apiId=api["apiId"], description="DoseWISE backend",
-                           expires=int(time.time()) + 360 * 86400)["apiKey"]["id"]
+    key = current_env().get("APPSYNC_EVENTS_API_KEY")  # reuse, so re-runs don't pile up keys
+    if not key:
+        key = a.create_api_key(apiId=api["apiId"], description="DoseWISE backend",
+                               expires=int(time.time()) + 360 * 86400)["apiKey"]["id"]
     env.update(APPSYNC_EVENTS_HTTP_ENDPOINT=f"https://{api['dns']['HTTP']}", APPSYNC_EVENTS_API_KEY=key)
 
 
@@ -341,6 +355,9 @@ def main():
             step()
         except ClientError as e:
             print(f"  [fail] {code(e)}: {e.response.get('Error', {}).get('Message', '')}")
+            failed.append(name)
+        except Exception as e:  # noqa: BLE001 - one service's problem must not stop the others or the .env write
+            print(f"  [fail] {type(e).__name__}: {e}")
             failed.append(name)
 
     write_env(env)

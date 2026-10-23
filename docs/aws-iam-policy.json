@@ -90,7 +90,7 @@
     {
       "Sid": "AppSyncEvents",
       "Effect": "Allow",
-      "Action": ["appsync:ListApis", "appsync:CreateApi", "appsync:CreateChannelNamespace", "appsync:CreateApiKey"],
+      "Action": ["appsync:ListApis", "appsync:GetApi", "appsync:CreateApi", "appsync:CreateChannelNamespace", "appsync:CreateApiKey"],
       "Resource": "*"
     },
     {
