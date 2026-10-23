@@ -126,7 +126,7 @@ optional resources; prefer `cdk destroy` for unused dev stacks.
 | Test | Result |
 |---|---|
 | Local fallbacks for all 23 services (unit/API tests) | **Pass** (26 backend tests) |
-| `cdk synth` of the stack | see PROJECT_CONTEXT.md timeline |
+| `cdk synth` of the stack (aws-cdk-lib 2.173.2, placeholder account) | **Pass** — 106 CloudFormation resources; not deployed |
 | Cognito auth, API Gateway authorisation, Lambda workflows, HealthLake, DynamoDB, S3, Step Functions, Bedrock, Comprehend Medical, interaction source, AppSync, Timestream, SNS/SES/SMS, EventBridge, Location, OpenSearch, KMS, CloudTrail, Identity Center | **Not run — no AWS account/credentials available in development** |
 
 Required live tests (each with failure, missing credentials, expired session, unauthorised request,
