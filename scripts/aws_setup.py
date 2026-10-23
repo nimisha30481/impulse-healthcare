@@ -355,6 +355,9 @@ def main():
             step()
         except ClientError as e:
             print(f"  [fail] {code(e)}: {e.response.get('Error', {}).get('Message', '')}")
+            if code(e) == "SubscriptionRequiredException":
+                print("         Not a DoseWISE or permission problem: AWS hasn't activated this service on the account yet.\n"
+                      "         This usually clears within 24 hours of account sign-up; re-run this command later.")
             failed.append(name)
         except Exception as e:  # noqa: BLE001 - one service's problem must not stop the others or the .env write
             print(f"  [fail] {type(e).__name__}: {e}")
