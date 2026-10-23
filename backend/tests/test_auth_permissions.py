@@ -1,13 +1,15 @@
-﻿from conftest import PASSWORD, Api, grant_doctor, make_doctor, register
+﻿from conftest import PASSWORD, PHONE, Api, grant_doctor, make_doctor, register
 
 
 def test_registration_requires_verification_and_strong_password():
     api = Api()
-    weak = api.post("/api/auth/register", {"role": "patient", "full_name": "A B", "email": "a@example.com",
-                                           "password": "password123", "accept_terms": True})
-    assert weak.status_code == 400
-    r = api.post("/api/auth/register", {"role": "patient", "full_name": "A B", "email": "a@example.com",
-                                        "password": PASSWORD, "accept_terms": True})
+    base = {"role": "patient", "full_name": "A B", "email": "a@example.com", "phone": PHONE, "accept_terms": True}
+    for weak in ("password123", "Passw0rd!", "Sh0rt_a"):  # no upper/special · '!' not allowed · too short
+        assert api.post("/api/auth/register", {**base, "password": weak}).status_code in (400, 422)
+    assert api.post("/api/auth/register", {**base, "phone": "98765", "password": PASSWORD}).status_code == 422
+    assert api.post("/api/auth/register", {**{k: v for k, v in base.items() if k != "phone"},
+                                           "password": PASSWORD}).status_code == 422
+    r = api.post("/api/auth/register", {**base, "password": PASSWORD})
     assert r.status_code == 200
     login = api.post("/api/auth/login", {"email": "a@example.com", "password": PASSWORD})
     assert login.status_code == 403  # email not verified yet

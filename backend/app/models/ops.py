@@ -191,6 +191,21 @@ class AuditLog(IdMixin, Base):
     hash: Mapped[str] = mapped_column(String(64))
 
 
+class GuestAccessLog(IdMixin, TimestampMixin, Base):
+    """Every guest (unregistered) doctor lookup by Patient Access ID, granted or not."""
+
+    __tablename__ = "guest_access_logs"
+
+    ip_address: Mapped[str | None] = mapped_column(String(64), index=True)
+    user_agent: Mapped[str | None] = mapped_column(String(300))
+    access_id_entered: Mapped[str] = mapped_column(String(32))
+    patient_id: Mapped[str | None] = mapped_column(ForeignKey("patient_profiles.id", ondelete="SET NULL"), index=True)
+    doctor_name: Mapped[str | None] = mapped_column(String(160))
+    doctor_license: Mapped[str | None] = mapped_column(String(80))
+    hospital: Mapped[str | None] = mapped_column(String(200))
+    outcome: Mapped[str] = mapped_column(String(16))  # granted | invalid | expired | rate_limited
+
+
 class FhirSyncRecord(IdMixin, TimestampMixin, Base):
     """Tracks PostgreSQL -> HealthLake synchronisation. PostgreSQL is the source of truth;
     HealthLake is a one-way FHIR replica for interoperability."""

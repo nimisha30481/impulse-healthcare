@@ -45,6 +45,9 @@ class PatientProfile(IdMixin, TimestampMixin, Base):
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
     mrn: Mapped[str] = mapped_column(String(32), unique=True)  # DoseWISE patient identifier
+    # Shareable Patient Access ID (services/access_ids.py); regenerating it revokes the old one.
+    access_id: Mapped[str | None] = mapped_column(String(16), unique=True, index=True)
+    access_id_created_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     date_of_birth: Mapped[date | None] = mapped_column(Date)
     sex: Mapped[str | None] = mapped_column(String(24))
     blood_group: Mapped[str | None] = mapped_column(String(8))

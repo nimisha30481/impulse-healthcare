@@ -68,7 +68,8 @@ def overview(patient_id: str, user: User = Depends(current_user), db: Session = 
         nxt = S.appointment(a) if a else None
     return {
         "patient": {"id": p.id, "name": p.user.full_name, "preferred_name": p.user.preferred_name or p.user.full_name.split()[0],
-                    "mrn": p.mrn, "avatar_color": p.user.avatar_color, "timezone": p.timezone},
+                    "mrn": p.mrn, "avatar_color": p.user.avatar_color, "timezone": p.timezone,
+                    "access_id": p.access_id if acc.kind == "owner" else None},
         "access": acc.kind,
         "today": [S.dose(o) for o in doses],
         "adherence": medication_schedule.adherence_summary(db, p.id, 7),
@@ -192,7 +193,7 @@ def respond(patient_id: str, occ_id: str, body: DoseResponse, user: User = Depen
                                      + (f" — {body.note}" if body.note else ""), created_by=user.id)
     realtime.queue(db, [u.id for u in users_with_access(db, patient_id, "medications.view")], "doses", patient_id, occ.id)
     db.commit()
-    return {"event_id": ev.id, "dose": S.dose(occ)}
+    return {"event_id": ev.id, "logged_at": occ.responded_at, "dose": S.dose(occ)}
 
 
 @router.get("/adherence")

@@ -7,9 +7,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import account, appointments, auth, care, doctor, misc, patients, support
+from app.api import access, account, appointments, auth, care, doctor, misc, patients, support
 from app.core.config import get_settings
-from app.core.database import Base, SessionLocal, engine
+from app.core.database import SessionLocal
+from app.core.migrate import upgrade_to_head
 from app.services import jobs, realtime
 
 log = logging.getLogger("impulse")
@@ -32,8 +33,8 @@ async def _job_loop():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     s = get_settings()
-    if s.database_url.startswith("sqlite"):
-        Base.metadata.create_all(engine)  # local convenience; PostgreSQL uses Alembic migrations
+    if s.database_url.startswith("sqlite") and s.environment != "test":
+        upgrade_to_head()  # local convenience; in AWS migrations run as a deploy step
     realtime.bind_loop(asyncio.get_running_loop())
     task = asyncio.create_task(_job_loop()) if s.run_background_jobs else None
     yield
@@ -73,7 +74,7 @@ async def validation_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(status_code=422, content={"detail": "Please check the highlighted fields", "errors": errors})
 
 
-for r in (auth.router, account.router, patients.router, care.router, doctor.router, appointments.router,
+for r in (access.router, auth.router, account.router, patients.router, care.router, doctor.router, appointments.router,
           support.router, misc.router):
     app.include_router(r)
 

@@ -191,15 +191,15 @@ def seed(db):
                          organization_id=hosp.id, languages=["English", "Telugu"]))
 
     ananya = mk_user(db, "ananya.demo@impulse.test", "patient", "Ananya Rao", "+91-90000-00021", "#0f766e", "Ananya")
-    pa = PatientProfile(user_id=ananya.id, mrn="IMP-DEMO-0001", date_of_birth=date(1961, 4, 12), sex="Female",
+    pa = PatientProfile(user_id=ananya.id, mrn="IMP-DEMO-0001", access_id="DW-ANANYA", access_id_created_at=now, date_of_birth=date(1961, 4, 12), sex="Female",
                         blood_group="B+", allergy_status="has_allergies", condition_status="has_conditions",
                         emergency_contact_name="Kavya Rao", emergency_contact_phone="+91-90000-00031",
                         emergency_contact_relation="Daughter", emergency_info_shareable=True)
     rahul = mk_user(db, "rahul.demo@impulse.test", "patient", "Rahul Verma", "+91-90000-00022", "#9333ea", "Rahul")
-    pr = PatientProfile(user_id=rahul.id, mrn="IMP-DEMO-0002", date_of_birth=date(1974, 9, 3), sex="Male",
+    pr = PatientProfile(user_id=rahul.id, mrn="IMP-DEMO-0002", access_id="DW-RAHULV", access_id_created_at=now, date_of_birth=date(1974, 9, 3), sex="Male",
                         allergy_status="unknown", condition_status="has_conditions")
     meera = mk_user(db, "meera.demo@impulse.test", "patient", "Meera Iyer", "+91-90000-00023", "#c2410c", "Meera")
-    pm = PatientProfile(user_id=meera.id, mrn="IMP-DEMO-0003", date_of_birth=date(1990, 1, 22), sex="Female",
+    pm = PatientProfile(user_id=meera.id, mrn="IMP-DEMO-0003", access_id="DW-MEERA2", access_id_created_at=now, date_of_birth=date(1990, 1, 22), sex="Female",
                         allergy_status="none_known", condition_status="none_known")
     db.add_all([pa, pr, pm])
     kavya = mk_user(db, "kavya.demo@impulse.test", "caregiver", "Kavya Rao", "+91-90000-00031", "#db2777", "Kavya")

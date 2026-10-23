@@ -133,6 +133,13 @@ def record_response(
             return existing  # retried request: same result, no duplicate event
     if occ.status == "cancelled":
         raise conflict("This dose was cancelled because the prescription changed")
+    if kind == "taken_reported" and occ.status == "taken_reported":
+        # already logged: return the saved log instead of creating a duplicate
+        prev = db.execute(select(MedicationEvent).where(MedicationEvent.occurrence_id == occ.id,
+                                                        MedicationEvent.kind == "taken_reported")
+                          .order_by(MedicationEvent.created_at.desc())).scalars().first()
+        if prev:
+            return prev
     now = utcnow()
     if occ.scheduled_at - now > timedelta(hours=2):
         raise bad_request("You can respond to a dose up to 2 hours before it is due")

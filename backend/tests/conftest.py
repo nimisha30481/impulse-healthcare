@@ -17,7 +17,9 @@ from app.core.database import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import DoctorProfile, User  # noqa: E402
 
-PASSWORD = "Str0ng!Passw0rd"
+PASSWORD = "Str0ng_Pass"
+PHONE = "9876543210"
+COUNCIL = "Karnataka Medical Council"
 
 
 class Api:
@@ -60,7 +62,9 @@ def register(role="patient", email=None, **extra) -> tuple[Api, dict]:
     api = Api()
     email = email or f"{role}-{os.urandom(3).hex()}@example.com"
     body = {"role": role, "full_name": f"Test {role.title()}", "email": email, "password": PASSWORD,
-            "accept_terms": True, **extra}
+            "phone": PHONE, "accept_terms": True, **extra}
+    if role == "doctor":
+        body.setdefault("registration_council", COUNCIL)
     r = api.post("/api/auth/register", body)
     assert r.status_code == 200, r.text
     token = r.json()["dev_link"].split("token=")[1]

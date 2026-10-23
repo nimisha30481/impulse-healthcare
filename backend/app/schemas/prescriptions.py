@@ -3,7 +3,8 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-DOSE_UNITS = ("tablet", "capsule", "mg", "mcg", "g", "ml", "drop", "puff", "unit", "patch", "sachet", "application")
+DOSE_UNITS = ("tablet", "capsule", "mcg", "mg", "g", "kg", "ml", "IU", "drop", "puff", "unit", "patch", "sachet",
+              "application")
 ROUTES = ("oral", "sublingual", "topical", "inhaled", "nasal", "ophthalmic", "otic", "subcutaneous",
           "intramuscular", "intravenous", "rectal", "transdermal")
 FORMS = ("tablet", "capsule", "syrup", "suspension", "injection", "inhaler", "drops", "cream", "ointment",

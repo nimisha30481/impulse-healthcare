@@ -4,8 +4,10 @@ demo login (development only) and the Cognito hosted-UI callback (when AUTH_PROV
 Sessions are opaque random tokens in an HttpOnly cookie; only a keyed hash is stored server-side.
 Nothing sensitive is put in localStorage.
 """
+import re
 import time
 from collections import defaultdict, deque
+from typing import Annotated
 from datetime import timedelta
 
 import pyotp
@@ -38,10 +40,16 @@ from app.models import (
     User,
     UserSession,
 )
+from app.core.india import COUNCILS, SPECIALITIES
 from app.models.base import utcnow
 from app.services import notifications
+from app.services.access_ids import new_access_id
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+# Sign-in and recovery accept any well-formed address (EmailStr rejects reserved domains such as
+# the demo accounts' "@impulse.test"); registration still uses strict EmailStr.
+Email = Annotated[str, Field(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=255)]
 
 # --- simple in-process rate limiter (API Gateway throttling covers this in AWS) ---
 _attempts: dict[str, deque] = defaultdict(deque)
@@ -122,15 +130,16 @@ def _send_link(db: Session, user: User, purpose: str, token: str) -> dict:
 
 # ---------------- registration ----------------
 class RegisterIn(BaseModel):
+    # caregiver accounts are only created through a patient's invitation link
     role: str = Field(pattern="^(patient|caregiver|doctor)$")
     full_name: str = Field(min_length=2, max_length=160)
     email: EmailStr
-    phone: str | None = Field(default=None, max_length=32)
-    password: str = Field(min_length=10, max_length=200)
+    phone: str = Field(pattern=r"^\d{10}$", description="10-digit mobile number")
+    password: str = Field(min_length=8, max_length=200)
     accept_terms: bool
     # doctor onboarding (verified by staff before any clinical access)
     speciality: str | None = None
-    registration_number: str | None = None
+    registration_number: str | None = Field(default=None, max_length=40)
     registration_council: str | None = None
 
 
@@ -152,12 +161,17 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
     db.add(user)
     db.flush()
     if body.role == "patient":
-        db.add(PatientProfile(user_id=user.id, mrn=f"IMP-{user.id[:8].upper()}"))
+        db.add(PatientProfile(user_id=user.id, mrn=f"IMP-{user.id[:8].upper()}", access_id=new_access_id(db),
+                              access_id_created_at=utcnow()))
     elif body.role == "caregiver":
         db.add(CaregiverProfile(user_id=user.id))
     elif body.role == "doctor":
-        if not body.speciality or not body.registration_number:
-            raise HTTPException(400, "Doctors must provide speciality and medical registration number")
+        if body.speciality not in SPECIALITIES:
+            raise HTTPException(400, "Choose a speciality from the list")
+        if body.registration_council not in COUNCILS:
+            raise HTTPException(400, "Choose the medical council you are registered with")
+        if not body.registration_number or not re.fullmatch(r"[A-Za-z0-9/\-]{3,40}", body.registration_number.strip()):
+            raise HTTPException(400, "Enter your medical registration number (letters, numbers, / or -)")
         db.add(DoctorProfile(user_id=user.id, speciality=body.speciality,
                              registration_number=body.registration_number,
                              registration_council=body.registration_council, verification_status="pending"))
@@ -185,7 +199,7 @@ def verify_email(body: TokenIn, db: Session = Depends(get_db)):
 
 
 class ResendIn(BaseModel):
-    email: EmailStr
+    email: Email
 
 
 @router.post("/resend-verification")
@@ -201,7 +215,7 @@ def resend_verification(body: ResendIn, request: Request, db: Session = Depends(
 
 # ---------------- login / MFA / logout ----------------
 class LoginIn(BaseModel):
-    email: EmailStr
+    email: Email
     password: str
     remember_device: bool = False
 
@@ -295,7 +309,7 @@ def session_state(request: Request, db: Session = Depends(get_db)):
 
 # ---------------- password reset ----------------
 class ForgotIn(BaseModel):
-    email: EmailStr
+    email: Email
 
 
 @router.post("/forgot-password")

@@ -46,6 +46,7 @@ from app.models.ops import (  # noqa: F401
     EscalationCase,
     FhirSyncRecord,
     FollowUpInstruction,
+    GuestAccessLog,
     IdempotencyRecord,
     Message,
     Notification,
