@@ -1,0 +1,81 @@
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AlertOctagon, AlertTriangle, CheckCircle2, Info, ShieldQuestion } from "lucide-react";
+import { Badge, Button, Textarea } from "@/components/ui/primitives";
+import { Notice, useToast } from "@/components/ui/feedback";
+import { api, errorMessage } from "@/lib/api";
+import { fmtDateTime, titleCase } from "@/lib/format";
+import type { Assessment } from "@/lib/types";
+
+const SEV = {
+  major: { tone: "danger" as const, icon: <AlertOctagon className="h-4 w-4" /> },
+  moderate: { tone: "warn" as const, icon: <AlertTriangle className="h-4 w-4" /> },
+  minor: { tone: "info" as const, icon: <Info className="h-4 w-4" /> },
+  info: { tone: "neutral" as const, icon: <Info className="h-4 w-4" /> },
+};
+
+export function InteractionPanel({ a, reviewable = true }: { a: Assessment; reviewable?: boolean }) {
+  const [note, setNote] = useState("");
+  const qc = useQueryClient();
+  const toast = useToast();
+  const review = useMutation({
+    mutationFn: (decision: string) => api.post(`/api/doctor/interaction-assessments/${a.id}/review`, { decision, note: note || null }),
+    onSuccess: () => { toast("ok", "Review recorded."); qc.invalidateQueries({ queryKey: ["doctor-patient"] }); qc.invalidateQueries({ queryKey: ["doctor-dashboard"] }); },
+    onError: (e) => toast("danger", errorMessage(e)),
+  });
+  return (
+    <div className="space-y-3 rounded-2xl border border-line p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-bold">Medication safety check</p>
+        <Badge>{fmtDateTime(a.created_at)}</Badge>
+        <Badge tone="neutral">Orchestrator: {a.orchestrator === "step_functions" ? "AWS Step Functions" : "in-process"}</Badge>
+      </div>
+      {a.drug_drug_state === "unavailable" && (
+        <Notice tone="warn" title="Drug interaction checking is currently unavailable." icon={<ShieldQuestion className="h-[18px] w-[18px]" />}>
+          No licensed interaction knowledge source is configured, so drug–drug pairs were <b>not</b> assessed. This is not a "no interactions" result.
+        </Notice>
+      )}
+      {a.drug_drug_state === "failed" && <Notice tone="danger" title="Interaction source error">The knowledge source didn't respond. Drug–drug pairs were not assessed. Try again or check manually.</Notice>}
+      <p className="text-xs text-ink-3">
+        Checks run: {a.checks_performed.map(titleCase).join(", ") || "none"}{a.checks_unavailable.length > 0 && ` · Not run: ${a.checks_unavailable.map(titleCase).join(", ")}`}
+        {a.knowledge_source && ` · Source: ${a.knowledge_source}`}
+      </p>
+      {a.alerts.length === 0 ? (
+        <p className="flex items-center gap-1.5 text-sm text-ink-2"><CheckCircle2 className="h-4 w-4 text-ok" />No issues found by the checks that ran.</p>
+      ) : (
+        <ul className="space-y-2">
+          {a.alerts.map((al) => {
+            const s = SEV[al.severity as keyof typeof SEV] ?? SEV.info;
+            return (
+              <li key={al.id} className="rounded-xl bg-surface-2 p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone={s.tone} icon={s.icon}>{titleCase(al.severity)}</Badge>
+                  <Badge>{titleCase(al.kind)}</Badge>
+                  <span className="font-semibold">{al.medicines.join(" + ")}</span>
+                </div>
+                <p className="mt-1.5 text-ink-2">{al.explanation}</p>
+                {al.consequences && <p className="text-ink-3">Possible consequence: {al.consequences}</p>}
+                {al.review_guidance && <p className="text-ink-3">Review: {al.review_guidance}</p>}
+                <p className="mt-1 text-xs text-ink-3">Source: {al.source}{al.source_updated_at && ` (updated ${al.source_updated_at})`}</p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <p className="text-xs italic text-ink-3">{a.disclaimer}</p>
+      {reviewable && a.alerts.length > 0 && (a.reviewed_at ? (
+        <Badge tone="ok">Reviewed: {titleCase(a.review_decision ?? "")}{a.review_note && ` — ${a.review_note}`}</Badge>
+      ) : (
+        <div className="space-y-2 border-t border-line pt-3">
+          <Textarea aria-label="Clinical review note" placeholder="Clinical review note (required to proceed despite an alert)" value={note} onChange={(e) => setNote(e.target.value)} className="min-h-[64px]" />
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => review.mutate("acknowledged")} loading={review.isPending}>Acknowledge</Button>
+            <Button size="sm" variant="outline" onClick={() => review.mutate("will_modify")}>I'll modify the prescription</Button>
+            <Button size="sm" variant="danger" disabled={!note.trim()} onClick={() => review.mutate("override")}>Proceed with documented reason</Button>
+          </div>
+          <p className="text-xs text-ink-3">IMPULSE never changes or stops a medicine because of an alert — that's your decision.</p>
+        </div>
+      ))}
+    </div>
+  );
+}

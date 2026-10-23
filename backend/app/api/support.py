@@ -63,7 +63,8 @@ def case_detail(case_id: str, user: User = Depends(Staff), db: Session = Depends
     p = c.patient
     caregivers = db.execute(select(CareRelationship).where(CareRelationship.patient_id == p.id,
                                                            CareRelationship.status == "active")).scalars()
-    checkins = db.execute(select(DoseOccurrence).where(DoseOccurrence.patient_id == p.id)
+    checkins = db.execute(select(DoseOccurrence).where(DoseOccurrence.patient_id == p.id,
+                                                       DoseOccurrence.scheduled_at <= utcnow())
                           .order_by(DoseOccurrence.scheduled_at.desc()).limit(12)).scalars()
     esc = db.execute(select(EscalationCase).where(EscalationCase.support_case_id == c.id)).scalar_one_or_none()
     audit.record(db, action="support_case_access", resource_type="support_case", resource_id=c.id,

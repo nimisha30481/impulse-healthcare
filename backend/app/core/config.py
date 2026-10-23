@@ -5,19 +5,22 @@ itself as "not configured" and the app falls back to a documented local behaviou
 pretends the AWS service ran.
 """
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+BACKEND_DIR = Path(__file__).resolve().parents[2]  # paths work whatever the working directory is
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
 
     # --- core ---
     environment: str = "development"  # development | test | staging | production
     app_name: str = "IMPULSE"
     # SQLite keeps local setup to zero dependencies. Use PostgreSQL everywhere else:
     # postgresql+psycopg://user:pass@host:5432/impulse
-    database_url: str = "sqlite:///./impulse_dev.db"
+    database_url: str = f"sqlite:///{(BACKEND_DIR / 'impulse_dev.db').as_posix()}"
     secret_key: str = "dev-only-change-me"  # used for CSRF/HMAC; must be set outside development
     frontend_origin: str = "http://localhost:5173"
     session_hours: int = 12
@@ -25,7 +28,7 @@ class Settings(BaseSettings):
     enable_demo_login: bool = True  # forced off outside development (see is_demo_allowed)
     run_background_jobs: bool = True
     background_tick_seconds: int = 60
-    local_storage_dir: str = "./private_storage"
+    local_storage_dir: str = str(BACKEND_DIR / "private_storage")
     max_upload_mb: int = 10
     default_timezone: str = "Asia/Kolkata"
 

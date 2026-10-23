@@ -1,4 +1,4 @@
-"""Medication safety checks.
+﻿"""Medication safety checks.
 
 Two very different kinds of check, kept separate on purpose:
 
@@ -107,7 +107,7 @@ def assess(db: Session, patient_id: str, *, new_item: PrescriptionItem | None, u
                     review_guidance="Confirm whether both are intended; check total daily amount.",
                 ))
             owner.setdefault(ing, (m["item_id"], m["name"]))
-    a.checks_performed.append("duplicate_ingredients")
+    a.checks_performed = [*a.checks_performed, "duplicate_ingredients"]
 
     allergies = db.execute(select(Allergy).where(Allergy.patient_id == patient_id, Allergy.status == "active")).scalars()
     allergy_ings = {(al.substance_ingredient or al.substance).lower(): al for al in allergies}
@@ -122,7 +122,7 @@ def assess(db: Session, patient_id: str, *, new_item: PrescriptionItem | None, u
                     source=f"Patient allergy record ({al.provenance.replace('_', ' ')})",
                     review_guidance="Review the allergy record before prescribing.",
                 ))
-    a.checks_performed.append("documented_allergies")
+    a.checks_performed = [*a.checks_performed, "documented_allergies"]
 
     # --- pairwise interactions: licensed knowledge source only ---
     try:
@@ -136,14 +136,14 @@ def assess(db: Session, patient_id: str, *, new_item: PrescriptionItem | None, u
                 consequences=hit.get("consequences"), source=result.get("source", "configured source"),
                 source_updated_at=result.get("updated_at"), review_guidance=hit.get("guidance"),
             ))
-        a.checks_performed.append("drug_drug_pairs")
+        a.checks_performed = [*a.checks_performed, "drug_drug_pairs"]
         a.status = "completed"
     except KnowledgeSourceUnavailable as e:
-        a.checks_unavailable.append("drug_drug_pairs")
+        a.checks_unavailable = [*a.checks_unavailable, "drug_drug_pairs"]
         a.error = str(e)
         a.status = "unavailable"
     except Exception as e:  # noqa: BLE001 - provider failure must surface, not look like "safe"
-        a.checks_unavailable.append("drug_drug_pairs")
+        a.checks_unavailable = [*a.checks_unavailable, "drug_drug_pairs"]
         a.error = f"Knowledge source error: {str(e)[:200]}"
         a.status = "failed"
 

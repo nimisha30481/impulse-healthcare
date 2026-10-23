@@ -1,0 +1,95 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/manrope/600.css";
+@import "@fontsource/manrope/700.css";
+@import "@fontsource/manrope/800.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens (RGB channels so Tailwind opacity modifiers work).
+   Text/background pairs meet WCAG AA (4.5:1) in both themes. */
+:root {
+  --bg: 250 248 244;          /* warm off-white */
+  --surface: 255 255 255;     /* cards */
+  --surface-2: 244 241 235;
+  --line: 229 225 217;
+  --ink: 31 35 40;            /* deep charcoal */
+  --ink-2: 74 80 88;
+  --ink-3: 107 114 122;
+  --primary: 15 94 99;        /* deep teal */
+  --primary-ink: 255 255 255;
+  --primary-soft: 223 241 238;
+  --mint: 191 240 221;        /* soft mint green */
+  --ok: 22 122 62;
+  --ok-soft: 224 244 231;
+  --warn: 161 84 6;
+  --warn-soft: 253 240 216;
+  --danger: 180 35 24;
+  --danger-soft: 253 229 226;
+  --info: 30 90 170;
+  --info-soft: 226 236 251;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: 13 18 20;
+  --surface: 21 28 31;
+  --surface-2: 28 37 41;
+  --line: 44 56 61;
+  --ink: 236 240 239;
+  --ink-2: 190 199 199;
+  --ink-3: 150 161 162;
+  --primary: 79 196 184;
+  --primary-ink: 6 30 30;
+  --primary-soft: 22 52 54;
+  --mint: 40 92 78;
+  --ok: 92 204 135;
+  --ok-soft: 20 52 35;
+  --warn: 240 177 82;
+  --warn-soft: 59 42 16;
+  --danger: 255 122 110;
+  --danger-soft: 66 24 22;
+  --info: 125 172 245;
+  --info-soft: 24 38 64;
+  color-scheme: dark;
+}
+
+[data-contrast="high"] {
+  --ink-2: var(--ink);
+  --ink-3: var(--ink);
+  --line: 120 120 120;
+}
+
+html[data-text-size="large"] { font-size: 112.5%; }
+html[data-text-size="x-large"] { font-size: 125%; }
+
+html, body { background: rgb(var(--bg)); color: rgb(var(--ink)); }
+body { @apply font-sans antialiased; text-rendering: optimizeLegibility; }
+h1, h2, h3, h4 { @apply font-display tracking-tight; }
+
+:focus-visible { outline: 3px solid rgb(var(--primary) / 0.7); outline-offset: 2px; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@layer components {
+  .card { @apply rounded-2xl border border-line bg-surface shadow-card; }
+  .label { @apply text-sm font-medium text-ink-2; }
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink placeholder:text-ink-3
+      focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15 disabled:opacity-60;
+  }
+  .input[aria-invalid="true"] { @apply border-danger focus:ring-danger/15; }
+  .link { @apply font-medium text-primary underline-offset-4 hover:underline; }
+  .container-page { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+  .skeleton { @apply animate-pulse rounded-lg bg-surface-2; }
+  .grid-bg {
+    background-image: linear-gradient(rgb(var(--line) / 0.6) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--line) / 0.6) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+}

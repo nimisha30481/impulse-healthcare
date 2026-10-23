@@ -102,6 +102,7 @@ def care_team(db: Session, p: PatientProfile) -> dict:
 def get_care_team(patient_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     acc = authorize_patient(db, user, patient_id, "careteam.view" if user.role != "caregiver" else "careteam.contact")
     team = care_team(db, acc.patient)
+    team["patient"] = S.person(acc.patient.user)
     if acc.kind != "owner":  # others see names/roles, not other people's grant details
         team["caregivers"] = [{"label": c["label"], "caregiver": c["caregiver"], "status": c["status"]}
                               for c in team["caregivers"] if c["status"] == "active"]

@@ -216,8 +216,12 @@ def test_duplicate_ingredient_and_allergy_checks(db):
     db.commit()
     d_api.post("/api/doctor/prescriptions", {"patient_id": pid, "items": [order()]})
     r = d_api.post("/api/doctor/prescriptions", {"patient_id": pid, "items": [order(brand_name="Other brand")]})
-    kinds = {a["kind"] for a in r.json()["assessments"][0]["alerts"]}
+    a = r.json()["assessments"][0]
+    kinds = {x["kind"] for x in a["alerts"]}
     assert {"duplicate_therapy", "allergy"} <= kinds
+    # regression: the list of checks that ran must be persisted, not lost on refresh
+    assert {"duplicate_ingredients", "documented_allergies"} <= set(a["checks_performed"])
+    assert a["checks_unavailable"] == ["drug_drug_pairs"]
 
 
 def test_notification_without_provider_is_not_marked_sent(db):
