@@ -1,4 +1,4 @@
-# IMPULSE — API Reference
+# DoseWISE — API Reference
 
 Interactive OpenAPI docs: **http://localhost:8000/api/docs** (schema at `/api/openapi.json`).
 

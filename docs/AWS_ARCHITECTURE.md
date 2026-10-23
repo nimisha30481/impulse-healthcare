@@ -1,4 +1,4 @@
-# IMPULSE — AWS Architecture & Integration
+# DoseWISE — AWS Architecture & Integration
 
 Status as of 2026-10-23. **No AWS resources have been deployed from this repository yet**, and no AWS
 integration has been tested against a live account. "Implemented" below means the application code
@@ -34,7 +34,7 @@ flowchart TB
 
 ## 2. Service responsibility matrix
 
-| # | Service | IMPULSE responsibility | Code | IaC | State without config | Phase |
+| # | Service | DoseWISE responsibility | Code | IaC | State without config | Phase |
 |---|---|---|---|---|---|---|
 | 1 | Amazon Cognito | Customer identity: sign-up, verification, MFA (TOTP), recovery; groups describe account type only | `integrations/cognito.py`, `api/auth.py` (`/cognito/*`) | User pool, groups, domain | Local argon2 auth + TOTP + server sessions | 1 |
 | 2 | API Gateway | HTTP API entry point, throttling (50 rps / burst 100) | — (infra) | HTTP API + stage | uvicorn directly | 1 |
@@ -71,7 +71,7 @@ Live status per environment: **Settings → Platform status** (`GET /api/integra
   India is a cross-border transfer requiring legal review under the DPDP framework. Default: off.
 - Bedrock model availability differs by region; pick a model available in-region and review data terms.
 - All services: confirm HIPAA eligibility / BAA status and Indian law requirements for the actual
-  operating context. IMPULSE claims no compliance.
+  operating context. DoseWISE claims no compliance.
 
 ## 4. Requested services that were replaced
 

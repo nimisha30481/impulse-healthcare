@@ -1,12 +1,16 @@
-# IMPULSE — Smart Healthcare & Medication Management
+# DoseWISE — Smart Healthcare & Medication Management
 
 > Better medication management. More connected care.
 
-IMPULSE connects **patients, doctors, caregivers and care coordinators** around one trustworthy medication
+DoseWISE connects **patients, doctors, caregivers and care coordinators** around one trustworthy medication
 record: versioned prescriptions, dose reminders with honest adherence tracking, appointment booking,
 medical records, caregiver permissions, human escalation, and an AWS cloud architecture behind it.
 
-All demo data is **fictional**. IMPULSE makes **no regulatory compliance claims**.
+All demo data is **fictional**. DoseWISE makes **no regulatory compliance claims**.
+
+> DoseWISE was previously called IMPULSE. Technical identifiers keep the old name so nothing breaks:
+> the repository, cookies (`impulse_session`, `impulse_csrf`), the local database file, demo emails
+> (`*@impulse.test`) and AWS stack/permission-set names.
 
 | Layer | Technology |
 |---|---|
@@ -90,6 +94,6 @@ PROJECT_CONTEXT.md   living project record (updated every prompt)
 
 ## Important limitations
 
-IMPULSE is a development build. It is not a certified medical device, does not dispatch emergency
+DoseWISE is a development build. It is not a certified medical device, does not dispatch emergency
 services (call **112** in India), does not provide 24/7 monitoring, and does not contain a drug
 interaction database — a licensed clinical knowledge source must be connected for drug–drug checks.

@@ -1,4 +1,4 @@
-# IMPULSE — Production Readiness Checklist
+# DoseWISE — Production Readiness Checklist
 
 Legend: ✅ done in repo · ⬜ not done.
 

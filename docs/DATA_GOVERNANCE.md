@@ -1,4 +1,4 @@
-# IMPULSE — Data Governance, Privacy, Backup & Recovery
+# DoseWISE — Data Governance, Privacy, Backup & Recovery
 
 ## 1. Classification
 
@@ -11,7 +11,7 @@
 
 ## 2. Ownership & sources of truth
 
-The patient is the data principal; IMPULSE (operator) is the custodian; clinicians own the clinical
+The patient is the data principal; DoseWISE (operator) is the custodian; clinicians own the clinical
 accuracy of what they record. Source-of-truth table: [ARCHITECTURE.md §4](ARCHITECTURE.md#source-of-truth).
 
 ## 3. Consent & permissions

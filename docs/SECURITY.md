@@ -1,11 +1,11 @@
-# IMPULSE — Security, Authentication & Authorisation
+# DoseWISE — Security, Authentication & Authorisation
 
 ## 1. Authentication
 
 | Mode | How |
 |---|---|
 | `AUTH_PROVIDER=local` (dev/default) | Argon2id password hashes; strength rule (10+ chars, 3 classes); email verification via single-use hashed tokens (24 h); lockout 15 min after 5 failures; per-IP/per-email rate limits; TOTP MFA (pyotp) with 8 argon2-hashed one-time backup codes; MFA mandatory to disable-protect for doctor/support/admin. |
-| `AUTH_PROVIDER=cognito` | Hosted UI authorization-code flow; the backend exchanges the code with the client secret, verifies the ID token signature (JWKS), issuer, audience and `token_use`, then opens an IMPULSE session. First Cognito sign-in creates a **patient** account only. |
+| `AUTH_PROVIDER=cognito` | Hosted UI authorization-code flow; the backend exchanges the code with the client secret, verifies the ID token signature (JWKS), issuer, audience and `token_use`, then opens an DoseWISE session. First Cognito sign-in creates a **patient** account only. |
 
 Sessions: 256-bit random token in an `HttpOnly`, `SameSite=Lax`, `Secure` (in AWS) cookie; only an
 HMAC of it is stored. Server-side expiry (12 h), revocation, "sign out everywhere", session list with
@@ -71,11 +71,11 @@ a database administrator cannot rewrite the whole chain.
 
 ## 6. Compliance position
 
-HIPAA applies only where IMPULSE operates as/for a covered entity or business associate. For an Indian
+HIPAA applies only where DoseWISE operates as/for a covered entity or business associate. For an Indian
 launch, assess the Digital Personal Data Protection Act 2023 and its Rules (consent, notice, data
 principal rights, breach notification, cross-border transfer), Telemedicine Practice Guidelines,
 applicable state rules and CERT-In directions. Privacy, consent and retention settings are
-configurable for legal review. **IMPULSE claims no compliance or certification.**
+configurable for legal review. **DoseWISE claims no compliance or certification.**
 
 ## 7. Incident response (outline)
 

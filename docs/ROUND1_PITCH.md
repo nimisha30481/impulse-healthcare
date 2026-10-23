@@ -1,4 +1,4 @@
-# IMPULSE — Round 1 pitch notes (Mentoring + Judging, 70 marks)
+# DoseWISE — Round 1 pitch notes (Mentoring + Judging, 70 marks)
 
 The public page **/blueprint** on the website covers every criterion below, in the same order. Use it
 as the presentation backbone. Replace "Member 1–4" with real names, and make sure each person can

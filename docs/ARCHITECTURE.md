@@ -1,4 +1,4 @@
-# IMPULSE — Application Architecture
+# DoseWISE — Application Architecture
 
 ## 1. Overview
 
@@ -70,7 +70,7 @@ after 5 minutes. Tested with concurrent requests.
 Comprehend Medical (if configured) → patient review/transcription → doctor verification → structured
 prescription → schedule. Unverified data never creates reminders.
 
-**Interaction checks.** Deterministic checks on IMPULSE data (duplicate ingredient, documented allergy)
+**Interaction checks.** Deterministic checks on DoseWISE data (duplicate ingredient, documented allergy)
 always run; drug–drug pairs only from a configured licensed source. Results record which checks ran
 and which were unavailable; Step Functions handles follow-up notification when configured.
 
