@@ -1,6 +1,5 @@
 @echo off
-rem Starts the DoseWISE backend (:8000) and frontend (:5173) in their own minimised windows.
-rem Each one restarts automatically if it stops. Close those windows to stop them.
+rem Starts DoseWISE (backend :8000 + frontend :5173) in one minimised window; both restart if they stop.
+rem Runs at Windows login via the "DoseWISE servers" shortcut in the Startup folder. Close the window to stop.
 cd /d "%~dp0"
-start "DoseWISE backend" /min cmd /c "%~dp0scripts\keep-running.bat" backend
-start "DoseWISE frontend" /min cmd /c "%~dp0scripts\keep-running.bat" frontend
+start "DoseWISE servers" /min node "%~dp0scripts\dev.mjs" all
