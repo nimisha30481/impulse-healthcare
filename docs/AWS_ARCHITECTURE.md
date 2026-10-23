@@ -21,7 +21,6 @@ flowchart TB
   SFN --> L3[Lambda: workflow]
   SCHED[EventBridge rule · 1 min] --> L2[Lambda: reminder/escalation tick]
   L1 & L2 --> SES[SES email] & EUM[End User Messaging SMS] & SNS[SNS ops alerts]
-  L1 --> CM[Comprehend Medical]
   L1 --> BR[Bedrock — summaries only]
   L1 --> HL[(HealthLake FHIR R4 replica)]
   L1 --> APS[AppSync Events — real-time hints]
@@ -51,7 +50,6 @@ flowchart TB
 | 13 | Amazon Pinpoint | **Not used — see §4**; replaced by SES + End User Messaging | — | — | — | 2 |
 | 14 | Amazon SES | Email notifications (generic text only) | `send_email` | email identity | `not_configured` | 2 |
 | 15 | AWS End User Messaging SMS | SMS notifications (generic text only) | `send_sms` | phone pool set up manually | `not_configured` | 2 |
-| 17 | Comprehend Medical | Medication entity extraction from OCR text; output is unverified | `comprehend_medications` | IAM only | none | 3 |
 | 18 | Amazon Bedrock | Plain-language narrative for clinical briefs; never findings | `bedrock_summarize` (citation validation) | IAM only | deterministic brief only | 3 |
 | 19 | Drug interaction source | Licensed knowledge source (HTTP adapter contract in `services/interactions.py`) | `query_knowledge_source` | — | **"unavailable" shown** | 3 |
 | 20 | Timestream for InfluxDB | Adherence time-series analytics (not source of truth) | `write_adherence_point` | not yet in stack | SQL aggregation | 3 |
@@ -65,9 +63,9 @@ Live status per environment: **Settings → Platform status** (`GET /api/integra
 
 - Default region `ap-south-1` (Mumbai) for an Indian launch. HealthLake has been available in Mumbai
   since April 2023 ([AWS](https://aws.amazon.com/about-aws/whats-new/2023/04/amazon-healthlake-asia-pacific-mumbai-region)).
-- **Comprehend Medical** is offered only in a few regions (historically US/EU/Sydney/Canada, not Mumbai).
-  `COMPREHEND_MEDICAL_REGION` is separate so it can point elsewhere — but sending health text out of
-  India is a cross-border transfer requiring legal review under the DPDP framework. Default: off.
+- **Textract and Comprehend Medical were removed.** Textract was not activated on the account, and
+  Comprehend Medical is not offered in Mumbai (using another region would send health text out of India).
+  Uploaded prescriptions are typed by the patient and verified by a doctor.
 - Bedrock model availability differs by region; pick a model available in-region and review data terms.
 - All services: confirm HIPAA eligibility / BAA status and Indian law requirements for the actual
   operating context. DoseWISE claims no compliance.
@@ -114,7 +112,7 @@ Teardown (dev): `cdk destroy -c env=dev` (dev buckets auto-empty; prod resources
 | CloudWatch logs/alarms | 1-month retention | 3–8 |
 | Optional: OpenSearch Serverless | minimum OCUs | **~175+** |
 | Optional: HealthLake data store | per hour + storage | **~200+** |
-| Optional: Comprehend Medical / Bedrock | per character / per token | usage-based |
+| Optional: Bedrock | per token | usage-based |
 
 Not every service has a free tier. Budget alert at 80 % of `budgetUsd` (default 150). Destroy idle
 optional resources; prefer `cdk destroy` for unused dev stacks.
@@ -125,7 +123,7 @@ optional resources; prefer `cdk destroy` for unused dev stacks.
 |---|---|
 | Local fallbacks for all 23 services (unit/API tests) | **Pass** (26 backend tests) |
 | `cdk synth` of the stack (aws-cdk-lib 2.173.2, placeholder account) | **Pass** — 106 CloudFormation resources; not deployed |
-| Cognito auth, API Gateway authorisation, Lambda workflows, HealthLake, DynamoDB, S3, Step Functions, Bedrock, Comprehend Medical, interaction source, AppSync, Timestream, SNS/SES/SMS, EventBridge, Location, OpenSearch, KMS, CloudTrail, Identity Center | **Not run — no AWS account/credentials available in development** |
+| Cognito auth, API Gateway authorisation, Lambda workflows, HealthLake, DynamoDB, S3, Step Functions, Bedrock, interaction source, AppSync, Timestream, SNS/SES/SMS, EventBridge, Location, OpenSearch, KMS, CloudTrail, Identity Center | **Not run — no AWS account/credentials available in development** |
 
 Required live tests (each with failure, missing credentials, expired session, unauthorised request,
 duplicate event, concurrent update, retry, failed notification, revoked permission and sync failure
@@ -135,7 +133,7 @@ cases) are listed in [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 
 Cognito (pool, client id/secret, domain) · S3 bucket · KMS key · DynamoDB tables · EventBridge bus ·
 Step Functions ARN · SNS topic · SES verified sender · End User Messaging origination identity ·
-HealthLake endpoint · AppSync Events endpoint + key · Comprehend Medical region ·
+HealthLake endpoint · AppSync Events endpoint + key ·
 Bedrock model id · Timestream for InfluxDB URL + token · OpenSearch endpoint · Location place index ·
 **licensed drug-interaction provider** · RDS secret. All are listed in `backend/.env.example`.
 

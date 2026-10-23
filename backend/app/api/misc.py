@@ -187,7 +187,10 @@ def directory_doctors(q: str | None = None, speciality: str | None = None, db: S
 @router.get("/integrations/status")
 def integrations(user: User = Depends(current_user)):
     s = get_settings()
-    return {"environment": s.environment, "auth_provider": s.auth_provider, "services": integration_status()}
+    return {"environment": s.environment, "auth_provider": s.auth_provider, "services": integration_status(),
+            # which notification channels can actually deliver here (Settings hides the rest)
+            "channels": {"email": bool(s.ses_from_address),
+                         "sms": bool(s.sns_sms_enabled or s.sms_origination_identity)}}
 
 
 # ---------------- admin ----------------

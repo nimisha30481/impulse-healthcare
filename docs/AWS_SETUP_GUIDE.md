@@ -49,7 +49,6 @@ Some services stay off on purpose, and Platform status says why:
 | Service | Why it's off |
 |---|---|
 | HealthLake, OpenSearch, Timestream | Billed every hour they exist |
-| Comprehend Medical | Not offered in the Mumbai region |
 | API Gateway, Lambda | Only exist in a full AWS deployment (`infra/`) |
 | Drug-interaction database | Needs a licence (Bedrock AI screening covers the gap meanwhile) |
 

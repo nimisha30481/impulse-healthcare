@@ -242,20 +242,22 @@ function NotificationPrefs() {
   const [n, setN] = useState<Record<string, { email?: boolean; sms?: boolean }>>(user!.preferences.notifications ?? {});
   const m = usePrefs();
   const integ = useQuery({ queryKey: ["integrations"], queryFn: () => api.get("/api/integrations/status") });
-  const state = (svc: string) => integ.data?.services.find((s: any) => s.service.startsWith(svc))?.state;
+  // SMS only appears once it can really be delivered (switched on in backend/.env)
+  const sms = !!integ.data?.channels?.sms;
+  const email = integ.data?.channels?.email ?? true;
   return (
-    <Panel title="Notifications" desc="In-app notifications are always on. Email and SMS never contain medical details.">
-      {(state("Amazon SES") === "not_configured" || state("AWS End User Messaging") === "not_configured") && (
-        <Notice tone="warn">Email/SMS providers aren't configured in this environment, so those channels are recorded as "not sent".</Notice>
+    <Panel title="Notifications" desc={`In-app notifications are always on.${sms ? " Email and SMS never contain" : " Emails never contain"} medical details.`}>
+      {integ.data && !email && (
+        <Notice tone="warn">Email isn't connected in this environment, so email notifications are recorded as "not sent".</Notice>
       )}
-      <table className="w-full text-sm"><thead className="text-left text-ink-3"><tr><th className="py-2">Type</th><th>In-app</th><th>Email</th><th>SMS</th></tr></thead>
+      <table className="w-full text-sm"><thead className="text-left text-ink-3"><tr><th className="py-2">Type</th><th>In-app</th><th>Email</th>{sms && <th>SMS</th>}</tr></thead>
         <tbody>{NOTIF.map(([k, l]) => (
           <tr key={k} className="border-t border-line">
             <td className="py-2.5 font-medium">{l}</td><td><Badge tone="ok">Always</Badge></td>
             <td><Toggle label={`${l} by email`} checked={!!n[k]?.email || k.startsWith("security") || k.startsWith("emergency")} disabled={k.startsWith("security") || k.startsWith("emergency")} onChange={(v) => setN({ ...n, [k]: { ...n[k], email: v } })} /></td>
-            <td><Toggle label={`${l} by SMS`} checked={!!n[k]?.sms || k.startsWith("emergency")} disabled={k.startsWith("emergency") || !user!.phone} onChange={(v) => setN({ ...n, [k]: { ...n[k], sms: v } })} /></td>
+            {sms && <td><Toggle label={`${l} by SMS`} checked={!!n[k]?.sms || k.startsWith("emergency")} disabled={k.startsWith("emergency") || !user!.phone} onChange={(v) => setN({ ...n, [k]: { ...n[k], sms: v } })} /></td>}
           </tr>))}</tbody></table>
-      {!user!.phone && <p className="text-xs text-ink-3">Add a phone number in Account to enable SMS.</p>}
+      {sms && !user!.phone && <p className="text-xs text-ink-3">Add a phone number in Account to enable SMS.</p>}
       <Button onClick={() => m.mutate({ notifications: n })} loading={m.isPending}>Save notification settings</Button>
     </Panel>
   );

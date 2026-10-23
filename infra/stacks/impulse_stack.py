@@ -159,7 +159,7 @@ class ImpulseStack(Stack):
             ops_topic.grant_publish(fn)
             fn.add_to_role_policy(iam.PolicyStatement(actions=["ses:SendEmail", "sms-voice:SendTextMessage"], resources=["*"]))
         api_fn.add_to_role_policy(iam.PolicyStatement(
-            actions=["comprehendmedical:DetectEntitiesV2","bedrock:InvokeModel",
+            actions=["bedrock:InvokeModel",
                      "geo:SearchPlaceIndexForText", "healthlake:CreateResource", "healthlake:UpdateResource"], resources=["*"]))
 
         # ---------- Step Functions: interaction assessment follow-up ----------

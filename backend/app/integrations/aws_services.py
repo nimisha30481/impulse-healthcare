@@ -170,31 +170,6 @@ def appsync_publish(channel: str, event: dict) -> Result:
         return Result("failed", error=str(e)[:300])
 
 
-# ---------------- Comprehend Medical ----------------
-def comprehend_medications(text: str) -> Result:
-    """Returns medication mentions with attributes. Mentions are NOT prescriptions."""
-    s = get_settings()
-    if not s.comprehend_medical_region:
-        return Result("not_configured")
-    try:
-        resp = client("comprehendmedical", s.comprehend_medical_region).detect_entities_v2(Text=text[:20000])
-        meds = []
-        for ent in resp["Entities"]:
-            if ent["Category"] != "MEDICATION":
-                continue
-            m = {"name": ent["Text"], "confidence": round(ent["Score"], 3)}
-            for a in ent.get("Attributes", []):
-                key = {"STRENGTH": "strength", "DOSAGE": "dose", "ROUTE_OR_MODE": "route",
-                       "FREQUENCY": "frequency", "DURATION": "duration", "FORM": "form"}.get(a["Type"])
-                if key:
-                    m[key] = a["Text"]
-                    m[f"{key}_confidence"] = round(a["Score"], 3)
-            meds.append(m)
-        return Result("ok", data=meds)
-    except Exception as e:  # noqa: BLE001
-        return Result("failed", error=str(e)[:300])
-
-
 # ---------------- Bedrock ----------------
 BEDROCK_SYSTEM = (
     "You rewrite verified clinical facts into a short, neutral summary for a clinician. "

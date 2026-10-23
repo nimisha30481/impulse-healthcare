@@ -60,7 +60,6 @@ class Settings(BaseSettings):
     bedrock_interaction_screening: bool = False  # AI drug-drug screening (labelled unverified)
     healthlake_datastore_endpoint: str = ""
     healthlake_region: str = ""
-    comprehend_medical_region: str = ""
     bedrock_model_id: str = ""
     bedrock_region: str = ""
     appsync_events_http_endpoint: str = ""
