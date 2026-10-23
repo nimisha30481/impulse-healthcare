@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { Menu, Moon, Stethoscope, Sun, X } from "lucide-react";
 import clsx from "clsx";
 import { Logo } from "../Logo";
 import { Button } from "../ui/primitives";
+import { LanguageSelect } from "../LanguageSelect";
 import { homeFor, useAuth, applyPreferences } from "@/lib/auth";
 
 const NAV = [
@@ -13,7 +14,6 @@ const NAV = [
   { to: "/#how-it-works", label: "How It Works", hash: "#how-it-works" },
   { to: "/#patients", label: "For Patients", hash: "#patients" },
   { to: "/#doctors", label: "For Doctors", hash: "#doctors" },
-  { to: "/blueprint", label: "Blueprint", hash: "" },
   { to: "/about", label: "About", hash: "" },
 ];
 
@@ -69,11 +69,13 @@ export function PublicLayout() {
             ))}
           </div>
           <div className="hidden items-center gap-2 xl:flex">
+            <LanguageSelect compact />
             <ThemeToggle />
             {user ? (
               <Link to={homeFor(user.role)}><Button>Open DoseWISE</Button></Link>
             ) : (
               <>
+                <Link to="/guest"><Button variant="outline" className="whitespace-nowrap" icon={<Stethoscope className="h-4 w-4" />}>Guest Doctor Access</Button></Link>
                 <Link to="/login" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-ink-2 hover:text-ink">Log In</Link>
                 <Link to="/register"><Button className="whitespace-nowrap">Get Started</Button></Link>
               </>
@@ -92,6 +94,8 @@ export function PublicLayout() {
                 {NAV.map((n) => (
                   <Link key={n.label} to={n.to} className="rounded-lg px-3 py-2.5 font-medium text-ink-2 hover:bg-surface-2">{n.label}</Link>
                 ))}
+                {!user && <Link to="/guest" className="rounded-lg px-3 py-2.5 font-semibold text-primary hover:bg-surface-2">Guest Doctor Access</Link>}
+                <LanguageSelect />
                 <div className="mt-2 flex gap-2">
                   {user ? <Link className="flex-1" to={homeFor(user.role)}><Button className="w-full">Open DoseWISE</Button></Link> : <>
                     <Link className="flex-1" to="/login"><Button variant="outline" className="w-full">Log In</Button></Link>
@@ -113,7 +117,7 @@ export function PublicLayout() {
 function Footer() {
   const cols = [
     { title: "Product", links: [["Features", "/#features"], ["How it works", "/#how-it-works"], ["For patients", "/#patients"], ["For doctors", "/#doctors"], ["Find care", "/directory"]] },
-    { title: "Company", links: [["About", "/about"], ["Project blueprint", "/blueprint"], ["Contact", "/contact"], ["Help", "/help"]] },
+    { title: "Company", links: [["About", "/about"], ["Guest doctor access", "/guest"],["Contact", "/contact"], ["Help", "/help"]] },
     { title: "Trust", links: [["Privacy Policy", "/privacy"], ["Terms", "/terms"], ["Security", "/security"], ["Accessibility", "/accessibility"]] },
   ];
   return (

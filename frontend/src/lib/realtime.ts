@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 /** Subscribes to server-sent update hints and invalidates the matching queries, which then
  *  refetch through the normal authorised API (so revoked access is enforced on refetch). */
 const TOPIC_KEYS: Record<string, string[][]> = {
-  doses: [["overview"], ["doses"], ["adherence"], ["caregiver-patients"], ["doctor-dashboard"]],
+  doses: [["overview"], ["doses"], ["adherence"], ["caregiver-patients"], ["doctor-dashboard"], ["dose-log"]],
   medications: [["medications"], ["medication"], ["overview"], ["doctor-patient"]],
   notifications: [["notifications"]],
   appointments: [["appointments"], ["overview"], ["doctor-dashboard"], ["doctor-appointments"]],

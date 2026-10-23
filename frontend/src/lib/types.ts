@@ -51,6 +51,7 @@ export interface Dose {
   scheduled_at: string;
   status: DoseStatus;
   snoozed_until?: string | null;
+  responded_at?: string | null;
   medicine: string;
   generic_name: string;
   strength: string;

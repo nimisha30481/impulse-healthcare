@@ -5,6 +5,7 @@ import { Search, ShieldAlert, Users } from "lucide-react";
 import { Avatar, Badge, Button, Field, Input, Select, Skeleton, Textarea } from "@/components/ui/primitives";
 import { EmptyState, ErrorState, Modal, Notice, useToast } from "@/components/ui/feedback";
 import { PageHeader } from "@/components/ui/domain";
+import { AccessIdUnlock } from "@/features/access/AccessComponents";
 import { api, errorMessage } from "@/lib/api";
 import { fmtDate } from "@/lib/format";
 
@@ -18,8 +19,9 @@ export default function DoctorPatients() {
   const list = useQuery({ queryKey: ["doctor-patients", q, filter], queryFn: () => api.get(`/api/doctor/patients?q=${encodeURIComponent(q)}&filter=${filter}`) });
   return (
     <>
-      <PageHeader title="Patients" subtitle="Only patients who have authorised you appear here. Search never reveals anyone else."
+      <PageHeader title="Patients" subtitle="Patients who shared their Access ID with you or booked with you. Search never reveals anyone else."
         actions={<Button variant="outline" onClick={() => setBg(true)} icon={<ShieldAlert className="h-4 w-4" />}>Emergency access</Button>} />
+      <div className="mb-5"><AccessIdUnlock compact /></div>
       <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_240px]">
         <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
           <Input aria-label="Search patients" className="pl-9" placeholder="Search by name or patient ID" value={q} onChange={(e) => setQ(e.target.value)} /></div>
@@ -44,7 +46,12 @@ export default function DoctorPatients() {
                     {p.flags.adherence_concern && <Badge tone="danger">Adherence</Badge>}
                     {p.flags.requires_follow_up && <Badge tone="warn">Follow-up</Badge>}
                     {p.flags.new_patient && <Badge tone="info">New</Badge>}
-                    {p.flags.active_treatment && <Badge tone="ok">Active Rx</Badge>}
+                    {p.flags.active_treatment && (
+                      <span title="Active: this patient has at least one medicine currently prescribed and being taken"
+                        aria-label="Active: has at least one medicine currently prescribed" tabIndex={0} className="cursor-help rounded-full focus-visible:outline">
+                        <Badge tone="ok">Active</Badge>
+                      </span>
+                    )}
                   </div></td>
                   <td className="p-3 text-xs">{p.permission.status}{p.permission.expires_at && <span className="block text-ink-3">until {fmtDate(p.permission.expires_at)}</span>}</td>
                   <td className="p-3"><Link to={`/doctor/patients/${p.id}`}><Button size="sm" variant="outline">Open</Button></Link></td>

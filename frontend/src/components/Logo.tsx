@@ -21,7 +21,7 @@ export function Logo({ className, size = 30 }: { className?: string; size?: numb
   return (
     <span className={clsx("inline-flex items-center gap-2.5", className)}>
       <LogoMark size={size} />
-      <span className="font-display text-[20px] font-extrabold tracking-tight text-ink">
+      <span className="font-display text-[20px] font-extrabold tracking-tight text-ink" data-no-translate>
         Dose<span className="text-primary">WISE</span>
       </span>
     </span>

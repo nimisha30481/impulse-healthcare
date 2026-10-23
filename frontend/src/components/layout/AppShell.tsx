@@ -11,6 +11,7 @@ import {
 import { Logo } from "../Logo";
 import { Avatar, Badge } from "../ui/primitives";
 import { ThemeToggle } from "./PublicLayout";
+import { LanguageSelect } from "../LanguageSelect";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useRealtime } from "@/lib/realtime";
@@ -141,6 +142,7 @@ export function AppShell() {
           </button>
           <div className="flex-1" />
           {user!.role === "patient" && <EmergencyButton patientId={user!.patient_id!} />}
+          <LanguageSelect compact className="hidden sm:inline-flex" />
           <ThemeToggle />
           <NotificationBell />
           <UserMenu onLogout={logout} />

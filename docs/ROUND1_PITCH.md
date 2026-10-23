@@ -1,5 +1,8 @@
 # DoseWISE — Round 1 pitch notes (Mentoring + Judging, 70 marks)
 
+> Note (2026-10-23): the public `/blueprint` page was removed from the website at the owner's request.
+> Its content now lives only in this document; the "Where it is shown" column refers to the old page.
+
 The public page **/blueprint** on the website covers every criterion below, in the same order. Use it
 as the presentation backbone. Replace "Member 1–4" with real names, and make sure each person can
 answer the questions for their own part without notes.

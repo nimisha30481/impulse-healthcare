@@ -31,13 +31,14 @@ export function DoseCard({ dose, patientId, detailHref, actor = "patient", index
   const [note, setNote] = useState("");
   const respond = useMutation({
     mutationFn: (body: any) => api.post(`/api/patients/${patientId}/doses/${dose.id}/respond`, {
-      ...body, idempotency_key: `${dose.id}:${body.kind}:${Date.now()}`,
+      // one stable key per dose for "taken": a double-click or retry can never create a second log
+      ...body, idempotency_key: body.kind === "taken_reported" ? `${dose.id}:taken` : `${dose.id}:${body.kind}:${Date.now()}`,
     }),
     onSuccess: (_d, body) => {
       qc.invalidateQueries({ queryKey: ["overview"] });
       qc.invalidateQueries({ queryKey: ["adherence"] });
       qc.invalidateQueries({ queryKey: ["doses"] });
-      toast("ok", body.kind === "taken_reported" ? "Recorded as taken." : body.kind === "snoozed" ? "Snoozed for 15 minutes." : "Thanks — we've let your care team know if needed.");
+      toast("ok", body.kind === "taken_reported" ? "Dose logged." : body.kind === "snoozed" ? "Snoozed for 15 minutes." : "Thanks — we've let your care team know if needed.");
       setCantOpen(false);
     },
     onError: (e) => toast("danger", errorMessage(e)),
@@ -51,6 +52,9 @@ export function DoseCard({ dose, patientId, detailHref, actor = "patient", index
   const tooEarly = Date.now() < opensAt;
   const actionable = !readOnly && !tooEarly && ACTIONABLE.has(dose.status);
   const due = dose.status === "due" || dose.status === "awaiting_confirmation";
+  // "Logged today" only reflects a saved log from the server, never a dose that's merely due or viewed.
+  const loggedToday = dose.status === "taken_reported" && !!dose.responded_at &&
+    new Date(dose.responded_at).toDateString() === new Date().toDateString();
 
   return (
     <motion.article layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
@@ -73,12 +77,18 @@ export function DoseCard({ dose, patientId, detailHref, actor = "patient", index
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        {loggedToday && (
+          <span role="status" className="inline-flex items-center gap-1.5 rounded-lg bg-ok-soft px-2.5 py-1.5 text-sm font-semibold text-ok">
+            <Check className="h-4 w-4" /><span>Logged today</span><span className="font-normal">at {fmtTime(dose.responded_at!)}</span>
+          </span>
+        )}
         {!readOnly && tooEarly && ACTIONABLE.has(dose.status) && (
           <span className="text-xs text-ink-3">You can respond from {fmtTime(new Date(opensAt).toISOString())}</span>
         )}
         {actionable && (
           <>
-            <Button size="sm" onClick={() => respond.mutate({ kind: "taken_reported" })} loading={respond.isPending && respond.variables?.kind === "taken_reported"}
+            <Button size="sm" onClick={() => respond.mutate({ kind: "taken_reported" })} disabled={respond.isPending}
+              loading={respond.isPending && respond.variables?.kind === "taken_reported"}
               icon={<Check className="h-4 w-4" />}>{actor === "caregiver" ? "Confirm taken" : t("dose.markTaken")}</Button>
             {actor === "patient" && (
               <Button size="sm" variant="outline" onClick={() => respond.mutate({ kind: "snoozed", snooze_minutes: 15 })}

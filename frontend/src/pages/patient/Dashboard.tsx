@@ -8,6 +8,7 @@ import { SectionTitle } from "@/components/ui/domain";
 import { DoseCard } from "@/features/doses/DoseCard";
 import { AdherenceCard } from "@/features/adherence/AdherenceCard";
 import { InstructionsList } from "@/features/instructions/InstructionsList";
+import { AccessIdCard } from "@/features/access/AccessComponents";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fmtRelative, greetingKey, titleCase } from "@/lib/format";
@@ -39,6 +40,7 @@ export default function PatientDashboard() {
             <p className="mt-1 text-sm opacity-85">
               {q.isLoading ? "Loading your day…" : doses.length ? `${reported} of ${doses.length} doses answered today.` : "No doses scheduled today."}
             </p>
+            <div className="mt-3"><AccessIdCard /></div>
           </div>
           <Link to="/notifications" className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold backdrop-blur hover:bg-white/25">
             <Bell className="h-4 w-4" /> {notes.data?.unread ?? 0} new

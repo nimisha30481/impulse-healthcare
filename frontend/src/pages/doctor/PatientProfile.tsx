@@ -10,6 +10,7 @@ import { AdherenceCard } from "@/features/adherence/AdherenceCard";
 import { PrescriptionForm, DiscontinueForm } from "@/features/prescriptions/PrescriptionForm";
 import { InteractionPanel } from "@/features/prescriptions/InteractionPanel";
 import { BriefView } from "@/features/briefs/BriefView";
+import { DoseLog } from "@/features/access/AccessComponents";
 import { MessageThread } from "@/pages/shared/Messages";
 import { api, errorMessage } from "@/lib/api";
 import { fmtDate, fmtDateTime, titleCase } from "@/lib/format";
@@ -130,6 +131,7 @@ export default function DoctorPatientProfile() {
             <StatCard label="Reported missed" value={d.adherence.month.missed_reported} tone="danger" />
             <StatCard label="Unconfirmed (no data)" value={d.adherence.month.unconfirmed} tone="warn" hint="Lack of data — not proof of non-adherence" />
           </div>
+          <DoseLog patientId={p.id} />
           <AdherenceCard patientId={p.id} />
           <section className="card p-5">
             <h2 className="font-bold">Patient-reported barriers</h2>

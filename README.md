@@ -41,16 +41,25 @@ npm install
 npm run dev                       # http://localhost:5173  (proxies /api to :8000)
 ```
 
-Open http://localhost:5173 → **Log In** → pick a demo persona (development only, no password):
+**Or just double-click `start-dosewise.bat`** (it also starts automatically at Windows login). It runs
+both servers and restarts either one within seconds if it stops. The backend upgrades the database
+schema itself on start-up (Alembic), so no manual migration step is needed.
 
-| Persona | Shows |
+Open http://localhost:5173. The main menu has three ways in: **Patient**, **Doctor** (Log In → demo
+persona, development only, no password) and **Guest Doctor Access** (no account needed).
+
+| Way in | Shows |
 |---|---|
-| Patient — Ananya | upcoming doses, adherence history, appointment, caregiver, uploaded prescription awaiting verification |
-| Patient — Rahul | unconfirmed doses → escalation → care-coordinator case |
-| Doctor — Dr. Mehra | dashboard tasks, prescription verification, follow-ups, patient profiles, clinical briefs |
-| Caregiver — Kavya | authorised access to Ananya with scoped permissions |
-| Coordinator — Priya | assigned missed-medication case |
-| Admin | clinician verification, audit log (hash-chain verified), break-glass review |
+| Patient — Ananya (Access ID `DW-ANANYA`) | Access ID card, Log dosage → "Logged today", adherence, appointment, records |
+| Patient — Rahul (`DW-RAHULV`) | unconfirmed doses → escalation |
+| Doctor — Dr. Mehra | open a patient by Access ID, prescribe (frequency presets, quantity autofill), dose history (taken / late / missed / not logged), verification, briefs |
+| Guest Doctor Access (`/guest`) | read-only chart for an Access ID; every attempt logged, patient notified |
+| Staff personas | caregiver, coordinator, admin: `/login?staff=1` |
+
+Account rules: mobile number required (10 digits); password at least 8 characters with an upper-case
+letter, a lower-case letter, a number and `$` or `_` (no other symbols); doctors choose a speciality
+and an Indian medical council (NMC or a State Medical Council) and enter their registration number.
+Interface languages: English, Hindi, Kannada, Tamil, Telugu (header selector; clinical text is never translated).
 
 Without AWS credentials every integration uses a documented local fallback and **says so** in the
 UI (Settings → Platform status). Email/SMS show as "not sent (provider not configured)"; drug–drug
@@ -61,7 +70,7 @@ Optional: copy `backend/.env.example` to `backend/.env` to use PostgreSQL or ena
 ## Tests
 
 ```bash
-cd backend && .venv\Scripts\python -m pytest -q      # 26 API/integration tests
+cd backend && .venv\Scripts\python -m pytest -q      # 32 API/integration tests
 cd frontend && npm test && npm run typecheck && npm run build
 ```
 

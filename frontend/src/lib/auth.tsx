@@ -80,6 +80,4 @@ export function applyPreferences(p: Preferences | undefined) {
   const dark = theme === "dark" || (theme === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
   root.dataset.theme = dark ? "dark" : "light";
   root.dataset.textSize = p?.text_size ?? "normal";
-  root.dataset.contrast = p?.high_contrast ? "high" : "normal";
-  root.lang = p?.language ?? "en";
 }

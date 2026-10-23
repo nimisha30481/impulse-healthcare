@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, KeyRound, ShieldCheck } from "lucide-react";
 import { AuthCard } from "./AuthCard";
 import { Button, Field, Input, Spinner } from "@/components/ui/primitives";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Notice } from "@/components/ui/feedback";
 import { api, errorMessage } from "@/lib/api";
 import { homeFor, useAuth } from "@/lib/auth";
@@ -54,7 +55,15 @@ export function ForgotPasswordPage() {
       {res ? (
         <div className="space-y-3">
           <Notice tone="ok">{res.message}</Notice>
-          {res.dev_link && <Notice tone="warn" title="Development mode">Email isn't configured. <a className="link" href={res.dev_link}>Open reset link</a></Notice>}
+          {res.dev_link ? (
+            <>
+              <Notice tone="warn" title="Email isn't connected in this environment">Nothing was emailed, so use the button below to set a new password now.</Notice>
+              <Link to={new URL(res.dev_link).pathname + new URL(res.dev_link).search}><Button className="w-full" icon={<KeyRound className="h-4 w-4" />}>Reset my password now</Button></Link>
+            </>
+          ) : (
+            <Notice tone="info">No email after a few minutes? Check the address is the one you registered with, and your spam folder.</Notice>
+          )}
+          <p className="text-center text-sm"><Link className="link" to="/login">Back to sign in</Link></p>
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-4">
@@ -90,7 +99,7 @@ export function ResetPasswordPage() {
       ) : (
         <form onSubmit={submit} className="space-y-4">
           {err && <Notice tone="danger">{err}</Notice>}
-          <Field label="New password" hint="10+ characters with a mix of types" required>{(p) => <Input {...p} type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />}</Field>
+          <Field label="New password" hint="Hover or tap (i) to see the rules" required>{(p) => <PasswordInput {...p} showRules autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />}</Field>
           <Button type="submit" className="w-full" loading={busy} icon={<KeyRound className="h-4 w-4" />}>Update password</Button>
         </form>
       )}

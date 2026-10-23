@@ -23,9 +23,11 @@ const TYPE_ICON: Record<string, ReactNode> = {
 };
 
 export function Timeline({ patientId, canRequestCorrection }: { patientId: string; canRequestCorrection?: boolean }) {
-  const [f, setF] = useState({ record_type: "", date_from: "", date_to: "", organization: "", medication: "", doctor: "" });
-  const qs = new URLSearchParams(Object.entries(f).filter(([k, v]) => v && k !== "doctor") as any).toString();
-  const q = useQuery({ queryKey: ["records", patientId, qs], queryFn: () => api.get(`/api/patients/${patientId}/records?${qs}`) });
+  const [f, setF] = useState({ record_type: "", doctor: "", organization: "", medication: "" });
+  // Only the type goes to the server, so every record of that type in the whole history comes back;
+  // the doctor / hospital / medication dropdowns are filled from those records.
+  const q = useQuery({ queryKey: ["records", patientId, f.record_type],
+    queryFn: () => api.get(`/api/patients/${patientId}/records${f.record_type ? `?record_type=${f.record_type}` : ""}`) });
   const [correct, setCorrect] = useState<RecordItem | null>(null);
   const [text, setText] = useState("");
   const toast = useToast();
@@ -35,22 +37,33 @@ export function Timeline({ patientId, canRequestCorrection }: { patientId: strin
     onSuccess: () => { toast("ok", "Correction requested. The original record stays unchanged until reviewed."); setCorrect(null); setText(""); qc.invalidateQueries({ queryKey: ["records"] }); },
     onError: (e) => toast("danger", errorMessage(e)),
   });
-  const records: RecordItem[] = (q.data?.records ?? []).filter((r: RecordItem) => !f.doctor || r.doctor?.name.toLowerCase().includes(f.doctor.toLowerCase()));
+  const all: RecordItem[] = q.data?.records ?? [];
+  const uniq = (xs: (string | null | undefined)[]) => [...new Set(xs.filter(Boolean) as string[])].sort();
+  const doctors = uniq(all.map((r) => r.doctor?.name));
+  const hospitals = uniq(all.map((r) => r.organization));
+  const meds = uniq(all.flatMap((r) => r.medication_names));
+  const records = all.filter((r) => (!f.doctor || r.doctor?.name === f.doctor) && (!f.organization || r.organization === f.organization)
+    && (!f.medication || r.medication_names.includes(f.medication)));
   const pending = new Set((q.data?.corrections ?? []).filter((c: any) => c.status === "open").map((c: any) => c.record_id));
 
   return (
     <div className="space-y-4">
-      <div className="card grid gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6">
-        <Select aria-label="Record type" value={f.record_type} onChange={(e) => setF({ ...f, record_type: e.target.value })}>
+      <div className="card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Select aria-label="Record type" value={f.record_type} onChange={(e) => setF({ record_type: e.target.value, doctor: "", organization: "", medication: "" })}>
           <option value="">All types</option>
           {Object.keys(TYPE_ICON).map((t) => <option key={t} value={t}>{titleCase(t)}</option>)}
         </Select>
-        <Input aria-label="From date" type="date" value={f.date_from} onChange={(e) => setF({ ...f, date_from: e.target.value })} />
-        <Input aria-label="To date" type="date" value={f.date_to} onChange={(e) => setF({ ...f, date_to: e.target.value })} />
-        <Input aria-label="Doctor" placeholder="Doctor" value={f.doctor} onChange={(e) => setF({ ...f, doctor: e.target.value })} />
-        <Input aria-label="Hospital" placeholder="Hospital" value={f.organization} onChange={(e) => setF({ ...f, organization: e.target.value })} />
-        <Input aria-label="Medication" placeholder="Medication" value={f.medication} onChange={(e) => setF({ ...f, medication: e.target.value })} />
+        <Select aria-label="Doctor" value={f.doctor} onChange={(e) => setF({ ...f, doctor: e.target.value })} disabled={!doctors.length}>
+          <option value="">All doctors</option>{doctors.map((d) => <option key={d}>{d}</option>)}
+        </Select>
+        <Select aria-label="Hospital" value={f.organization} onChange={(e) => setF({ ...f, organization: e.target.value })} disabled={!hospitals.length}>
+          <option value="">All hospitals</option>{hospitals.map((d) => <option key={d}>{d}</option>)}
+        </Select>
+        <Select aria-label="Medication" value={f.medication} onChange={(e) => setF({ ...f, medication: e.target.value })} disabled={!meds.length}>
+          <option value="">All medications</option>{meds.map((d) => <option key={d}>{d}</option>)}
+        </Select>
       </div>
+      {!q.isLoading && f.record_type && <p className="text-sm text-ink-3">{records.length} {titleCase(f.record_type).toLowerCase()} record{records.length === 1 ? "" : "s"} in your full history</p>}
       {q.isError ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> : q.isLoading ? <Skeleton className="h-64" /> :
         records.length === 0 ? <EmptyState icon={<FileText className="h-6 w-6" />} title="No matching records" /> : (
           <ol className="relative space-y-4 border-l-2 border-line pl-6">

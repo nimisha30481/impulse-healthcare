@@ -2,14 +2,14 @@ import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, KeyRound, Laptop, LogOut, Monitor, Moon, ShieldCheck, Sun, Trash2 } from "lucide-react";
+import { KeyRound, Laptop, LogOut, Monitor, Moon, ShieldCheck, Sun, Trash2 } from "lucide-react";
 import clsx from "clsx";
-import { Badge, Button, Checkbox, Field, Input, Select, Toggle } from "@/components/ui/primitives";
+import { Badge, Button, Field, Input, Select, Toggle } from "@/components/ui/primitives";
 import { ConfirmDialog, Modal, Notice, useToast } from "@/components/ui/feedback";
 import { PageHeader } from "@/components/ui/domain";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { LANGUAGES } from "@/lib/i18n";
+import { LANGUAGES, useLanguage } from "@/lib/i18n";
 import { fmtDateTime, titleCase } from "@/lib/format";
 import { password as passwordRule } from "@/lib/schemas";
 import type { Preferences } from "@/lib/types";
@@ -61,24 +61,48 @@ export default function Settings() {
 }
 
 function Account() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const isDoctor = user!.role === "doctor";
   const [f, setF] = useState({ full_name: user!.full_name, preferred_name: user!.preferred_name ?? "", phone: user!.phone ?? "", avatar_color: user!.avatar_color });
   const qc = useQueryClient();
   const toast = useToast();
-  const m = useMutation({ mutationFn: () => api.patch("/api/account/profile", f), onSuccess: () => { qc.invalidateQueries({ queryKey: ["session"] }); toast("ok", "Profile updated."); }, onError: (e) => toast("danger", errorMessage(e)) });
+  const nav = useNavigate();
+  const [close, setClose] = useState(false);
+  const [pw, setPw] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const m = useMutation({
+    mutationFn: () => {
+      if (f.phone && !/^\d{10}$/.test(f.phone)) throw new Error("Enter a 10-digit mobile number");
+      const { preferred_name, ...rest } = f;
+      return api.patch("/api/account/profile", isDoctor ? rest : { ...rest, preferred_name });
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["session"] }); toast("ok", "Profile updated."); },
+    onError: (e) => toast("danger", errorMessage(e)),
+  });
+  const closeM = useMutation({ mutationFn: () => api.post("/api/account/close", { password: pw, confirm }),
+    onSuccess: async (r) => { toast("ok", r.retention_note); await logout(); nav("/"); }, onError: (e) => toast("danger", errorMessage(e)) });
   return (
-    <Panel title="Account" desc={`Signed in as ${user!.email}${user!.mrn ? ` · Patient ID ${user!.mrn}` : ""}`}>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Full name">{(p) => <Input {...p} value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} />}</Field>
-        <Field label="Preferred name">{(p) => <Input {...p} value={f.preferred_name} onChange={(e) => setF({ ...f, preferred_name: e.target.value })} />}</Field>
-        <Field label="Phone">{(p) => <Input {...p} type="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />}</Field>
-        <Field label="Profile colour">{(p) => <div className="flex gap-2">{["#0f766e", "#0e7490", "#7c3aed", "#db2777", "#c2410c", "#2563eb"].map((c) => (
-          <button key={c} {...(c === f.avatar_color ? { "aria-pressed": true } : {})} aria-label={`Colour ${c}`} onClick={() => setF({ ...f, avatar_color: c })}
-            className={clsx("h-9 w-9 rounded-full ring-offset-2 ring-offset-surface", c === f.avatar_color && "ring-2 ring-ink")} style={{ background: c }} />))}<span className="sr-only" id={p.id} /></div>}</Field>
-      </div>
-      <p className="text-xs text-ink-3">To change your email, contact support (email changes require re-verification).</p>
-      <Button onClick={() => m.mutate()} loading={m.isPending}>Save profile</Button>
-    </Panel>
+    <div className="space-y-6">
+      <Panel title="Account" desc={`Signed in as ${user!.email}${user!.mrn ? ` · Patient ID ${user!.mrn}` : ""}`}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Full name">{(p) => <Input {...p} value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} />}</Field>
+          {!isDoctor && <Field label="Preferred name">{(p) => <Input {...p} value={f.preferred_name} onChange={(e) => setF({ ...f, preferred_name: e.target.value })} />}</Field>}
+          <Field label="Mobile number" hint="10 digits">{(p) => <Input {...p} type="tel" inputMode="numeric" maxLength={10} value={f.phone}
+            onChange={(e) => setF({ ...f, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })} />}</Field>
+          <Field label="Profile colour">{(p) => <div className="flex gap-2">{["#0f766e", "#0e7490", "#7c3aed", "#db2777", "#c2410c", "#2563eb"].map((c) => (
+            <button key={c} {...(c === f.avatar_color ? { "aria-pressed": true } : {})} aria-label={`Colour ${c}`} onClick={() => setF({ ...f, avatar_color: c })}
+              className={clsx("h-9 w-9 rounded-full ring-offset-2 ring-offset-surface", c === f.avatar_color && "ring-2 ring-ink")} style={{ background: c }} />))}<span className="sr-only" id={p.id} /></div>}</Field>
+        </div>
+        <p className="text-xs text-ink-3">To change your email, contact support (email changes require re-verification).</p>
+        <Button onClick={() => m.mutate()} loading={m.isPending}>Save profile</Button>
+      </Panel>
+      <Panel title="Close account">
+        <p className="text-sm text-ink-2">You'll be signed out everywhere and your Access ID stops working. Medical records are kept only for the period the law requires.</p>
+        <Button variant="danger" onClick={() => setClose(true)} icon={<Trash2 className="h-4 w-4" />}>Close my account</Button>
+      </Panel>
+      <ConfirmDialog open={close} onClose={() => setClose(false)} onConfirm={() => closeM.mutate()} loading={closeM.isPending} tone="danger" title="Close your account?" confirmLabel="Close account"
+        body={<div className="space-y-3"><p>Type <b>CLOSE</b> and enter your password.</p><Input aria-label="Type CLOSE" value={confirm} onChange={(e) => setConfirm(e.target.value)} /><Input aria-label="Password" type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>} />
+    </div>
   );
 }
 
@@ -156,17 +180,17 @@ function Security() {
 }
 
 function Language() {
-  const { user } = useAuth();
-  const m = usePrefs();
+  const { lang, setLang } = useLanguage();
+  const toast = useToast();
   return (
-    <Panel title="Language" desc="Interface language. Clinical instructions from your doctor are always shown exactly as written — they are never machine-translated.">
+    <Panel title="Language" desc="Changes the language across the whole website. Doctors' clinical instructions are always shown exactly as written — they are never machine-translated.">
       <div className="grid gap-2 sm:grid-cols-2">
         {LANGUAGES.map((l) => (
-          <button key={l.code} onClick={() => m.mutate({ language: l.code })} aria-pressed={user!.preferences.language === l.code}
-            className={clsx("rounded-xl border p-3 text-left font-semibold", (user!.preferences.language ?? "en") === l.code ? "border-primary bg-primary-soft" : "border-line hover:bg-surface-2")}>{l.label}</button>
+          <button key={l.code} onClick={() => { setLang(l.code); toast("ok", "Saved."); }} aria-pressed={lang === l.code} data-no-translate
+            className={clsx("rounded-xl border p-3 text-left font-semibold", lang === l.code ? "border-primary bg-primary-soft" : "border-line hover:bg-surface-2")}>{l.label}</button>
         ))}
       </div>
-      {(user!.preferences.language ?? "en") !== "en" && <Notice tone="info">Translations are a preview awaiting professional review. Untranslated text appears in English.</Notice>}
+      {lang !== "en" && <Notice tone="info">Translations are a preview awaiting professional review. Any text not yet translated appears in English.</Notice>}
     </Panel>
   );
 }
@@ -183,28 +207,33 @@ function Appearance() {
     <Panel title="Appearance">
       <div className="flex gap-3">{opt("light", <Sun className="h-5 w-5" />, "Light")}{opt("dark", <Moon className="h-5 w-5" />, "Dark")}{opt("system", <Monitor className="h-5 w-5" />, "System")}</div>
       <Field label="Text size">{(f) => <Select {...f} value={p.text_size ?? "normal"} onChange={(e) => m.mutate({ text_size: e.target.value as any })}><option value="normal">Standard</option><option value="large">Large</option><option value="x-large">Extra large</option></Select>}</Field>
-      <div className="flex items-center justify-between rounded-xl bg-surface-2 p-3"><span className="text-sm font-medium">High contrast</span><Toggle label="High contrast" checked={!!p.high_contrast} onChange={(v) => m.mutate({ high_contrast: v })} /></div>
-      <div className="flex items-center justify-between rounded-xl bg-surface-2 p-3"><span className="text-sm font-medium">Reduce motion</span><Toggle label="Reduce motion" checked={!!p.reduced_motion} onChange={(v) => m.mutate({ reduced_motion: v })} /></div>
     </Panel>
   );
+}
+
+/** Date format as the operating system / browser locale writes it, e.g. "DD/MM/YYYY". */
+function systemDateFormat(): string {
+  const parts = new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "2-digit", year: "numeric" }).formatToParts(new Date(2026, 10, 23));
+  return parts.map((x) => (x.type === "day" ? "DD" : x.type === "month" ? "MM" : x.type === "year" ? "YYYY" : x.value)).join("");
 }
 
 function Region() {
   const { user } = useAuth();
   const p = user!.preferences;
-  const [f, setF] = useState({ country: p.country ?? "India", state: p.state ?? "", timezone: p.timezone ?? "Asia/Kolkata", date_format: p.date_format ?? "DD/MM/YYYY", units: p.units ?? "metric" });
+  const ref = useQuery({ queryKey: ["reference"], queryFn: () => api.get("/api/reference"), staleTime: Infinity });
+  const [state, setState] = useState(p.state ?? "");
   const m = usePrefs();
+  const dateFormat = systemDateFormat();
   return (
-    <Panel title="Region" desc="Reminders follow your time zone, including when you travel.">
+    <Panel title="Region" desc="DoseWISE is available in India. Dates follow your device's format.">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Country">{(x) => <Input {...x} value={f.country} onChange={(e) => setF({ ...f, country: e.target.value })} />}</Field>
-        <Field label="State">{(x) => <Input {...x} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} />}</Field>
-        <Field label="Time zone">{(x) => <Select {...x} value={f.timezone} onChange={(e) => setF({ ...f, timezone: e.target.value })}>
-          {["Asia/Kolkata", "Asia/Dubai", "Asia/Singapore", "Europe/London", "America/New_York", "America/Los_Angeles", "Australia/Sydney", "UTC"].map((t) => <option key={t}>{t}</option>)}</Select>}</Field>
-        <Field label="Date format">{(x) => <Select {...x} value={f.date_format} onChange={(e) => setF({ ...f, date_format: e.target.value })}><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option></Select>}</Field>
-        <Field label="Units">{(x) => <Select {...x} value={f.units} onChange={(e) => setF({ ...f, units: e.target.value })}><option value="metric">Metric</option><option value="imperial">Imperial</option></Select>}</Field>
+        <Field label="Country">{(x) => <Input {...x} value="India" readOnly disabled />}</Field>
+        <Field label="State">{(x) => <Select {...x} value={state} onChange={(e) => setState(e.target.value)}>
+          <option value="">Select state / union territory…</option>
+          {ref.data?.states.map((s: string) => <option key={s}>{s}</option>)}</Select>}</Field>
+        <Field label="Date format" hint="Taken automatically from your device settings">{(x) => <Input {...x} value={dateFormat} readOnly disabled />}</Field>
       </div>
-      <Button onClick={() => m.mutate(f)} loading={m.isPending}>Save region</Button>
+      <Button onClick={() => m.mutate({ country: "India", state, date_format: dateFormat })} loading={m.isPending}>Save region</Button>
     </Panel>
   );
 }
@@ -237,36 +266,27 @@ function NotificationPrefs() {
 }
 
 function Privacy() {
-  const { user, logout } = useAuth();
-  const nav = useNavigate();
-  const toast = useToast();
-  const m = usePrefs();
-  const [close, setClose] = useState(false);
-  const [pw, setPw] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const ds = user!.preferences.data_sharing ?? {};
-  const closeM = useMutation({ mutationFn: () => api.post("/api/account/close", { password: pw, confirm }), onSuccess: async (r) => { toast("ok", r.retention_note); await logout(); nav("/"); }, onError: (e) => toast("danger", errorMessage(e)) });
+  const { user } = useAuth();
+  const doctor = user!.role === "doctor";
+  const points = doctor ? [
+    "Your name, speciality, council and registration number are used to verify you before you can access any patient, and are shown to patients you treat.",
+    "Records you open, prescriptions you write and changes you make are saved with your name and time, and kept in a tamper-evident audit log.",
+    "You can open a patient's record only with their Patient Access ID or another authorisation they gave; access expires and patients can revoke it.",
+    "Your mobile number and email are used for sign-in security and account notices, never for marketing.",
+    "Patient information you see may be used only for that patient's care. Downloading or sharing it outside DoseWISE is your professional responsibility.",
+  ] : [
+    "Your medicines, dose logs, records and allergies are used to show your schedule, send reminders and help your doctors treat you safely.",
+    "Only you and doctors you authorise (with your Access ID or by booking) can see your health information. Guest doctors get a one-time, read-only view and you are notified.",
+    "Every time someone views or changes your record it is logged, and you can see who in Care Team → History.",
+    "Reminders by SMS or email never include medical details.",
+    "We never sell your data or use it for advertising. Regenerating your Access ID stops anyone who has the old one.",
+  ];
   return (
-    <div className="space-y-6">
-      <Panel title="Data sharing" desc="Changes are recorded in your consent history.">
-        <Checkbox checked={!!ds.research} onChange={(v) => m.mutate({ data_sharing: { ...ds, research: v } })} label="Allow de-identified data to be used to improve DoseWISE" description="Off by default. No research programme is active today." />
-        <Checkbox checked={ds.share_with_care_team !== false} onChange={(v) => m.mutate({ data_sharing: { ...ds, share_with_care_team: v } })} label="Show my recent activity to authorised care team members" />
-        {user!.role === "patient" && <p className="text-sm"><Link to="/patient/care-team" className="link">Manage who has access, consent history and access history →</Link></p>}
-      </Panel>
-      <Panel title="Your data">
-        <div className="flex flex-wrap gap-2">
-          <a href="/api/account/export" download><Button variant="outline" icon={<Download className="h-4 w-4" />}>Download my data</Button></a>
-          {user!.role === "patient" && <Link to="/patient/records"><Button variant="outline">Request a correction</Button></Link>}
-          <Link to="/privacy"><Button variant="ghost">Privacy policy</Button></Link>
-        </div>
-        <p className="text-xs text-ink-3">Retention: clinical records are kept for the period required by law in your jurisdiction, then deleted. Retention rules are configurable per deployment.</p>
-      </Panel>
-      <Panel title="Close account">
-        <p className="text-sm text-ink-2">You'll be signed out everywhere. Medical records are retained as legally required.</p>
-        <Button variant="danger" onClick={() => setClose(true)} icon={<Trash2 className="h-4 w-4" />}>Close my account</Button>
-      </Panel>
-      <ConfirmDialog open={close} onClose={() => setClose(false)} onConfirm={() => closeM.mutate()} loading={closeM.isPending} tone="danger" title="Close your account?" confirmLabel="Close account"
-        body={<div className="space-y-3"><p>Type <b>CLOSE</b> and enter your password.</p><Input aria-label="Type CLOSE" value={confirm} onChange={(e) => setConfirm(e.target.value)} /><Input aria-label="Password" type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>} />
-    </div>
+    <Panel title="How your information is used" desc="A short summary. The full Privacy Policy has the details.">
+      <ul className="space-y-3">
+        {points.map((t) => <li key={t} className="flex gap-2.5 text-sm text-ink-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-ok" />{t}</li>)}
+      </ul>
+      <Link to="/privacy" className="link text-sm">Read the full Privacy Policy →</Link>
+    </Panel>
   );
 }

@@ -1,4 +1,6 @@
-import { lazy, Suspense, useEffect, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { api } from "./lib/api";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import { PublicLayout } from "./components/layout/PublicLayout";
@@ -11,7 +13,7 @@ import Landing from "./pages/public/Landing";
 
 const p = (f: () => Promise<any>) => lazy(f);
 const About = p(() => import("./pages/public/About"));
-const Blueprint = p(() => import("./pages/public/Blueprint"));
+const GuestAccess = p(() => import("./pages/public/GuestAccess"));
 const InfoPage = p(() => import("./pages/public/InfoPage"));
 const Login = p(() => import("./pages/auth/Login"));
 const Register = p(() => import("./pages/auth/Register"));
@@ -66,6 +68,11 @@ function RequireAuth({ roles, children }: { roles?: Role[]; children: ReactNode 
 export default function App() {
   const { user } = useAuth();
   const prefs = user?.preferences;
+  const qc = useQueryClient();
+  const persistLang = useCallback((language: string) => {
+    if (!user) return;
+    api.patch("/api/account/preferences", { language }).then(() => qc.invalidateQueries({ queryKey: ["session"] })).catch(() => {});
+  }, [user, qc]);
   useEffect(() => applyPreferences(prefs), [prefs]);
   useEffect(() => {
     const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
@@ -75,14 +82,14 @@ export default function App() {
   }, [prefs]);
 
   return (
-    <I18nProvider lang={prefs?.language ?? "en"}>
-      <MotionConfig reducedMotion={prefs?.reduced_motion ? "always" : "user"}>
+    <I18nProvider userLang={user ? prefs?.language ?? "en" : undefined} onPersist={persistLang}>
+      <MotionConfig reducedMotion="user">
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route element={<PublicLayout />}>
               <Route index element={<Landing />} />
               <Route path="about" element={<About />} />
-              <Route path="blueprint" element={<Blueprint />} />
+              <Route path="guest" element={<GuestAccess />} />
               {["privacy", "terms", "security", "accessibility", "contact", "help"].map((slug) => (
                 <Route key={slug} path={slug} element={<InfoPage slug={slug} />} />
               ))}

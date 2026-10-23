@@ -85,17 +85,18 @@ export function Modal({ open, onClose, title, children, footer, size = "md", lab
           <motion.div className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div ref={ref} role="dialog" aria-modal="true" aria-labelledby={labelledBy ?? "modal-title"}
-            className={clsx("relative flex max-h-[92vh] w-full flex-col rounded-t-3xl bg-surface shadow-lift sm:rounded-3xl", width)}
+            className={clsx("relative flex max-h-[calc(100dvh-1rem)] w-full flex-col sm:max-h-[calc(100dvh-3rem)] rounded-t-3xl bg-surface shadow-lift sm:rounded-3xl", width)}
             initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}>
-            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-4">
               <h2 id={labelledBy ?? "modal-title"} className="text-lg font-bold">{title}</h2>
               <button data-close onClick={onClose} className="rounded-lg p-1.5 text-ink-3 hover:bg-surface-2" aria-label="Close dialog">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="overflow-y-auto px-5 py-4">{children}</div>
-            {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-line px-5 py-3.5">{footer}</div>}
+            {/* min-h-0 lets the body shrink and scroll inside the dialog instead of pushing the top off-screen */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
+            {footer && <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-line px-5 py-3.5">{footer}</div>}
           </motion.div>
         </div>
       )}
@@ -124,10 +125,16 @@ const ToastCtx = createContext<(tone: Toast["tone"], text: string) => void>(() =
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Toast[]>([]);
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const push = useCallback((tone: Toast["tone"], text: string) => {
-    const id = Date.now() + Math.random();
-    setItems((s) => [...s, { id, tone, text }]);
-    setTimeout(() => setItems((s) => s.filter((t) => t.id !== id)), 4500);
+    // Same message again (e.g. several settings saved at once) refreshes one toast instead of stacking.
+    const key = `${tone}:${text}`;
+    clearTimeout(timers.current.get(key));
+    setItems((s) => (s.some((t) => `${t.tone}:${t.text}` === key) ? s : [...s.slice(-2), { id: Date.now() + Math.random(), tone, text }]));
+    timers.current.set(key, setTimeout(() => {
+      setItems((s) => s.filter((t) => `${t.tone}:${t.text}` !== key));
+      timers.current.delete(key);
+    }, tone === "danger" ? 4000 : 2000));
   }, []);
   return (
     <ToastCtx.Provider value={push}>

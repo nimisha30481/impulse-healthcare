@@ -1,19 +1,26 @@
 import { z } from "zod";
 
-export const password = z
-  .string()
-  .min(10, "Use at least 10 characters")
-  .refine(
-    (p) => [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((r) => r.test(p)).length >= 3,
-    "Mix at least three of: lower-case, upper-case, numbers, symbols",
-  );
+/** Same rules as the backend (core/security.py). */
+export const PASSWORD_RULES = [
+  { id: "len", label: "At least 8 characters", test: (p: string) => p.length >= 8 },
+  { id: "upper", label: "One upper-case letter (A–Z)", test: (p: string) => /[A-Z]/.test(p) },
+  { id: "lower", label: "One lower-case letter (a–z)", test: (p: string) => /[a-z]/.test(p) },
+  { id: "digit", label: "One number (0–9)", test: (p: string) => /\d/.test(p) },
+  { id: "special", label: "One special character: $ or _", test: (p: string) => /[$_]/.test(p) },
+  { id: "allowed", label: "No other symbols (only $ and _ allowed)", test: (p: string) => /^[A-Za-z0-9$_]*$/.test(p) },
+];
+
+export const password = z.string().superRefine((p, ctx) => {
+  const failed = PASSWORD_RULES.find((r) => !r.test(p));
+  if (failed) ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Password needs: ${failed.label.toLowerCase()}` });
+});
 
 export const registerSchema = z
   .object({
-    role: z.enum(["patient", "caregiver", "doctor"]),
+    role: z.enum(["patient", "doctor"]),
     full_name: z.string().trim().min(2, "Enter your full name"),
     email: z.string().email("Enter a valid email address"),
-    phone: z.string().optional(),
+    phone: z.string().regex(/^\d{10}$/, "Enter a 10-digit mobile number"),
     password,
     confirm: z.string(),
     accept_terms: z.literal(true, { errorMap: () => ({ message: "Please accept the terms to continue" }) }),
@@ -22,9 +29,10 @@ export const registerSchema = z
     registration_council: z.string().optional(),
   })
   .refine((d) => d.password === d.confirm, { path: ["confirm"], message: "Passwords don't match" })
-  .refine((d) => d.role !== "doctor" || (d.speciality && d.registration_number), {
-    path: ["registration_number"],
-    message: "Doctors must provide speciality and registration number",
+  .refine((d) => d.role !== "doctor" || !!d.speciality, { path: ["speciality"], message: "Choose your speciality" })
+  .refine((d) => d.role !== "doctor" || !!d.registration_council, { path: ["registration_council"], message: "Choose your medical council" })
+  .refine((d) => d.role !== "doctor" || /^[A-Za-z0-9/-]{3,40}$/.test((d.registration_number ?? "").trim()), {
+    path: ["registration_number"], message: "Enter your registration number (letters, numbers, / or -)",
   });
 
 export const loginSchema = z.object({

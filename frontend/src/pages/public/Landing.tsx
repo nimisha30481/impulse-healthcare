@@ -167,7 +167,7 @@ function Problem() {
         <p className="text-sm font-semibold uppercase tracking-wider text-primary">The problem</p>
         <h2 className="mt-3 text-3xl font-extrabold sm:text-4xl">Healthcare shouldn't feel disconnected.</h2>
         <p className="mt-4 text-ink-2">Schedules, dosage changes, allergies and histories scattered across hospitals and pharmacies lead to duplicated medicines, missed doses and avoidable risk.</p>
-        <p className="mt-3 text-sm text-ink-3">The WHO estimates adherence to long-term therapies at about 50% in developed countries. <Link to="/blueprint#problem" className="link">See the evidence, architecture and plan →</Link></p>
+        <p className="mt-3 text-sm text-ink-3">The WHO estimates adherence to long-term therapies at about 50% in developed countries.</p>
       </Reveal>
       <div className="mt-12 grid gap-5 md:grid-cols-3">
         {cards.map((c, i) => (

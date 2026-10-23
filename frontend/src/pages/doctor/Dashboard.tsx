@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, AlertCircle, ArrowRight, BadgeCheck, CalendarDays, ClipboardList, Users } from "lucide-react";
+import { Activity, ArrowRight, BadgeCheck, CalendarDays, ClipboardList, Users } from "lucide-react";
 import { Avatar, Badge, Skeleton } from "@/components/ui/primitives";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
 import { PageHeader, SectionTitle, StatCard } from "@/components/ui/domain";
+import { AccessIdUnlock } from "@/features/access/AccessComponents";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fmtTime } from "@/lib/format";
@@ -17,27 +18,14 @@ export default function DoctorDashboard() {
   return (
     <>
       <PageHeader eyebrow={fmtDate(new Date(), { weekday: "long" })} title={`Good to see you, ${user!.full_name}`} subtitle="Here's what needs your attention, in priority order." />
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard label="Today's appointments" value={d?.today_appointments.length ?? "—"} icon={<CalendarDays className="h-4 w-4" />} />
-        <StatCard label="Tasks requiring action" value={d?.tasks.length ?? "—"} icon={<ClipboardList className="h-4 w-4" />} tone="warn" />
         <StatCard label="Adherence alerts" value={d?.adherence_alerts.length ?? "—"} icon={<Activity className="h-4 w-4" />} tone="danger" />
-        <StatCard label="Authorised patients" value={d?.patient_count ?? "—"} icon={<Users className="h-4 w-4" />} tone="info" />
+        <StatCard label="Patients" value={d?.patient_count ?? "—"} icon={<Users className="h-4 w-4" />} tone="info" />
       </div>
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         <div className="space-y-6">
-          <section>
-            <SectionTitle title="Tasks requiring action" icon={<AlertCircle className="h-5 w-5 text-warn" />} />
-            {q.isLoading ? <Skeleton className="h-32" /> : d.tasks.length === 0 ? <EmptyState icon={<BadgeCheck className="h-6 w-6" />} title="Nothing waiting" /> : (
-              <ul className="card divide-y divide-line">
-                {d.tasks.map((t: any, i: number) => (
-                  <li key={i}><Link to={t.link} className="flex items-center gap-3 p-4 hover:bg-surface-2">
-                    <Badge tone={t.priority === "high" ? "danger" : "warn"}>{t.priority === "high" ? "High" : "Normal"}</Badge>
-                    <span className="flex-1 text-sm font-medium">{t.title}</span><ArrowRight className="h-4 w-4 text-ink-3" />
-                  </Link></li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <AccessIdUnlock compact />
           <section>
             <SectionTitle title="Today & upcoming consultations" icon={<CalendarDays className="h-5 w-5 text-primary" />} action={<Link to="/doctor/appointments" className="link text-sm">Schedule</Link>} />
             {q.isLoading ? <Skeleton className="h-32" /> : [...d.today_appointments, ...d.upcoming].length === 0 ? <EmptyState icon={<CalendarDays className="h-6 w-6" />} title="No upcoming consultations" /> : (
