@@ -11,6 +11,7 @@ import Landing from "./pages/public/Landing";
 
 const p = (f: () => Promise<any>) => lazy(f);
 const About = p(() => import("./pages/public/About"));
+const Blueprint = p(() => import("./pages/public/Blueprint"));
 const InfoPage = p(() => import("./pages/public/InfoPage"));
 const Login = p(() => import("./pages/auth/Login"));
 const Register = p(() => import("./pages/auth/Register"));
@@ -81,6 +82,7 @@ export default function App() {
             <Route element={<PublicLayout />}>
               <Route index element={<Landing />} />
               <Route path="about" element={<About />} />
+              <Route path="blueprint" element={<Blueprint />} />
               {["privacy", "terms", "security", "accessibility", "contact", "help"].map((slug) => (
                 <Route key={slug} path={slug} element={<InfoPage slug={slug} />} />
               ))}
