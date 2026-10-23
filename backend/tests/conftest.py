@@ -10,6 +10,11 @@ os.environ.update({
     "SECRET_KEY": "test-secret",
 })
 
+from app.core.config import Settings  # noqa: E402
+
+# Tests never read backend/.env, so a developer's linked AWS account is never called from a test.
+Settings.model_config["env_file"] = None
+
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 

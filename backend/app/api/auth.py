@@ -30,7 +30,7 @@ from app.core.security import (
     validate_password_strength,
     verify_password,
 )
-from app.integrations import aws_services
+from app.integrations import aws_services, cognito
 from app.models import (
     AuthToken,
     CaregiverProfile,
@@ -151,12 +151,27 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
     if err := validate_password_strength(body.password):
         raise HTTPException(400, err)
     email = body.email.lower()
+    use_cognito = cognito.enabled()
+    pending = ({"status": "verify_code", "email": email,
+                "message": "If this email can be registered, we've emailed it a 6-digit verification code."}
+               if use_cognito else
+               {"status": "check_email", "message": "If this email can be registered, we've sent a verification link."})
     if db.execute(select(User).where(User.email == email)).scalar_one_or_none():
-        # same response as success to avoid account enumeration
-        return {"status": "check_email", "message": "If this email can be registered, we've sent a verification link."}
-    if get_settings().auth_provider == "cognito":
-        raise HTTPException(400, "Registration is handled by the hosted sign-in page")
-    user = User(email=email, phone=body.phone, password_hash=hash_password(body.password), role=body.role,
+        return pending  # same response as success to avoid account enumeration
+    # checked before the Cognito account exists (the full doctor checks run again below)
+    if use_cognito and body.role == "doctor" and (body.speciality not in SPECIALITIES
+                                                  or body.registration_council not in COUNCILS):
+        raise HTTPException(400, "Choose a speciality and medical council from the lists")
+    sub = None
+    if use_cognito:
+        try:
+            sub = cognito.sign_up(email, body.password, body.full_name.strip(), body.phone)
+        except cognito.CognitoError as e:
+            if e.code == "UsernameExistsException":
+                return pending
+            raise e.http()
+    user = User(email=email, phone=body.phone, role=body.role, cognito_sub=sub,
+                password_hash=None if use_cognito else hash_password(body.password),
                 full_name=body.full_name.strip(), preferences={"language": "en", "theme": "system"})
     db.add(user)
     db.flush()
@@ -175,23 +190,34 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
         db.add(DoctorProfile(user_id=user.id, speciality=body.speciality,
                              registration_number=body.registration_number,
                              registration_council=body.registration_council, verification_status="pending"))
-    token = _issue_token(db, user, "verify_email", 24)
-    out = _send_link(db, user, "verify_email", token)
-    audit.record(db, action="account_registered", resource_type="user", resource_id=user.id, user=user)
+    out = {} if use_cognito else _send_link(db, user, "verify_email", _issue_token(db, user, "verify_email", 24))
+    audit.record(db, action="account_registered", resource_type="user", resource_id=user.id, user=user,
+                 reason="cognito" if use_cognito else None)
     _sec_event(db, request, "registered", user)
     db.commit()
-    return {"status": "check_email", "message": "If this email can be registered, we've sent a verification link.",
-            **out}
+    return {**pending, **out}
 
 
-class TokenIn(BaseModel):
-    token: str
+class VerifyIn(BaseModel):
+    token: str | None = None  # link flow (local accounts)
+    email: Email | None = None  # code flow (Cognito accounts)
+    code: str | None = Field(default=None, max_length=10)
 
 
 @router.post("/verify-email")
-def verify_email(body: TokenIn, db: Session = Depends(get_db)):
-    t = _consume_token(db, body.token, "verify_email")
-    user = db.get(User, t.user_id)
+def verify_email(body: VerifyIn, request: Request, db: Session = Depends(get_db)):
+    if body.token:
+        user = db.get(User, _consume_token(db, body.token, "verify_email").user_id)
+    else:
+        rate_limit(f"verify-code:{client_ip(request)}", 10, 900)
+        user = db.execute(select(User).where(User.email == (body.email or "").lower())).scalar_one_or_none()
+        if not user or not body.code or not cognito.is_cognito_user(user):
+            raise HTTPException(400, cognito.FRIENDLY["CodeMismatchException"])
+        try:
+            cognito.confirm_sign_up(user.email, body.code.strip())
+        except cognito.CognitoError as e:
+            if not (e.code == "NotAuthorizedException" and user.email_verified):  # already confirmed
+                raise e.http()
     user.email_verified = True
     audit.record(db, action="email_verified", resource_type="user", resource_id=user.id, user=user)
     db.commit()
@@ -207,7 +233,12 @@ def resend_verification(body: ResendIn, request: Request, db: Session = Depends(
     rate_limit(f"resend:{body.email.lower()}", 3, 3600)
     user = db.execute(select(User).where(User.email == body.email.lower())).scalar_one_or_none()
     out = {}
-    if user and not user.email_verified:
+    if user and not user.email_verified and cognito.is_cognito_user(user):
+        try:
+            cognito.resend_code(user.email)
+        except cognito.CognitoError as e:
+            raise e.http()
+    elif user and not user.email_verified:
         out = _send_link(db, user, "verify_email", _issue_token(db, user, "verify_email", 24))
         db.commit()
     return {"status": "sent_if_exists", **out}
@@ -232,7 +263,11 @@ def login(body: LoginIn, request: Request, response: Response, db: Session = Dep
         db.commit()
         raise HTTPException(423, "Account temporarily locked after repeated failed attempts. Try again in 15 minutes "
                                  "or reset your password.")
-    if not user or not verify_password(body.password, user.password_hash) or not user.is_active or user.closed_at:
+    try:
+        password_ok = bool(user) and cognito.check_password(user, body.password)
+    except cognito.CognitoError:  # Cognito account whose email code hasn't been entered yet
+        raise HTTPException(403, "Please verify your email first. Enter the 6-digit code we emailed you.")
+    if not user or not password_ok or not user.is_active or user.closed_at:
         if user:
             user.failed_logins += 1
             if user.failed_logins >= 5:
@@ -317,25 +352,46 @@ def forgot_password(body: ForgotIn, request: Request, db: Session = Depends(get_
     rate_limit(f"forgot:{client_ip(request)}", 5, 3600)
     user = db.execute(select(User).where(User.email == body.email.lower())).scalar_one_or_none()
     out = {}
-    if user and user.password_hash:
+    if user and cognito.is_cognito_user(user):
+        try:
+            cognito.forgot_password(user.email)
+        except cognito.CognitoError as e:
+            if e.code in ("LimitExceededException", "TooManyRequestsException"):
+                raise e.http()
+        _sec_event(db, request, "password_reset_requested", user, provider="cognito")
+        db.commit()
+    elif user and user.password_hash:
         out = _send_link(db, user, "reset_password", _issue_token(db, user, "reset_password", 1))
         _sec_event(db, request, "password_reset_requested", user)
         db.commit()
+    if cognito.enabled():
+        return {"status": "code_sent", "message": "If an account exists, we've emailed a 6-digit reset code.", **out}
     return {"status": "sent_if_exists", "message": "If an account exists, a reset link has been sent.", **out}
 
 
 class ResetIn(BaseModel):
-    token: str
-    password: str = Field(min_length=10, max_length=200)
+    token: str | None = None  # link flow (local accounts)
+    email: Email | None = None  # code flow (Cognito accounts)
+    code: str | None = Field(default=None, max_length=10)
+    password: str = Field(min_length=8, max_length=200)
 
 
 @router.post("/reset-password")
 def reset_password(body: ResetIn, request: Request, db: Session = Depends(get_db)):
     if err := validate_password_strength(body.password):
         raise HTTPException(400, err)
-    t = _consume_token(db, body.token, "reset_password")
-    user = db.get(User, t.user_id)
-    user.password_hash = hash_password(body.password)
+    if body.token:
+        user = db.get(User, _consume_token(db, body.token, "reset_password").user_id)
+        user.password_hash = hash_password(body.password)
+    else:
+        rate_limit(f"reset-code:{client_ip(request)}", 10, 900)
+        user = db.execute(select(User).where(User.email == (body.email or "").lower())).scalar_one_or_none()
+        if not user or not body.code or not cognito.is_cognito_user(user):
+            raise HTTPException(400, cognito.FRIENDLY["CodeMismatchException"])
+        try:
+            cognito.confirm_forgot_password(user.email, body.code.strip(), body.password)
+        except cognito.CognitoError as e:
+            raise e.http()
     user.locked_until = None
     for s in db.execute(select(UserSession).where(UserSession.user_id == user.id, UserSession.revoked_at.is_(None))).scalars():
         s.revoked_at = utcnow()  # sign out everywhere after a reset
@@ -392,12 +448,10 @@ def cognito_login():
 
 @router.get("/cognito/callback")
 def cognito_callback(code: str, request: Request, db: Session = Depends(get_db)):
-    from app.integrations.cognito import exchange_code_and_verify
-
     s = get_settings()
     if s.auth_provider != "cognito":
         raise HTTPException(404, "Cognito is not enabled")
-    claims = exchange_code_and_verify(code)
+    claims = cognito.exchange_code_and_verify(code)
     user = db.execute(select(User).where(User.cognito_sub == claims["sub"])).scalar_one_or_none()
     if not user:
         # first sign-in creates a patient account only; other roles need controlled onboarding
@@ -405,7 +459,8 @@ def cognito_callback(code: str, request: Request, db: Session = Depends(get_db))
                     full_name=claims.get("name") or claims["email"], email_verified=bool(claims.get("email_verified")))
         db.add(user)
         db.flush()
-        db.add(PatientProfile(user_id=user.id, mrn=f"IMP-{user.id[:8].upper()}"))
+        db.add(PatientProfile(user_id=user.id, mrn=f"IMP-{user.id[:8].upper()}", access_id=new_access_id(db),
+                              access_id_created_at=utcnow()))
     response = RedirectResponse(f"{s.frontend_origin}/app")
     _start_session(db, response, request, user, mfa_passed=True)  # MFA enforced by the Cognito pool policy
     _sec_event(db, request, "login_success", user, provider="cognito")

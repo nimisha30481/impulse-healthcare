@@ -10,18 +10,67 @@ import { api, errorMessage } from "@/lib/api";
 import { homeFor, useAuth } from "@/lib/auth";
 import { password as passwordRule } from "@/lib/schemas";
 
+const codeInputClass = "text-center font-mono text-2xl tracking-[0.4em]";
+
+/** Email-code verification for accounts stored in Amazon Cognito. */
+export function VerifyCodeForm({ email: initialEmail = "" }: { email?: string }) {
+  const [email, setEmail] = useState(initialEmail);
+  const [code, setCode] = useState("");
+  const [state, setState] = useState<"idle" | "busy" | "ok">("idle");
+  const [err, setErr] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    setState("busy");
+    try { await api.post("/api/auth/verify-email", { email, code }); setState("ok"); }
+    catch (x) { setErr(errorMessage(x)); setState("idle"); }
+  };
+  const resend = async () => {
+    setErr(null);
+    try { await api.post("/api/auth/resend-verification", { email }); setInfo("A new code is on its way. It can take a minute."); }
+    catch (x) { setErr(errorMessage(x)); }
+  };
+  if (state === "ok") {
+    return (
+      <div className="space-y-4 text-center">
+        <CheckCircle2 className="mx-auto h-12 w-12 text-ok" />
+        <p>Your email is verified. You can sign in now.</p>
+        <Link to="/login"><Button className="w-full">Sign in</Button></Link>
+      </div>
+    );
+  }
+  return (
+    <form onSubmit={submit} className="space-y-4 text-left">
+      {err && <Notice tone="danger">{err}</Notice>}
+      {info && <Notice tone="ok">{info}</Notice>}
+      {!initialEmail && <Field label="Email" required>{(p) => <Input {...p} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />}</Field>}
+      <Field label="6-digit code from your email" required>
+        {(p) => <Input {...p} inputMode="numeric" autoComplete="one-time-code" maxLength={8} className={codeInputClass}
+          value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} />}
+      </Field>
+      <Button type="submit" className="w-full" loading={state === "busy"} disabled={code.length < 6 || !email}>Verify email</Button>
+      <p className="text-center text-sm text-ink-3">No email? Check spam, or <button type="button" className="link" onClick={resend} disabled={!email}>send a new code</button>.</p>
+    </form>
+  );
+}
+
 export function VerifyEmailPage() {
   const [params] = useSearchParams();
+  const token = params.get("token");
   const [state, setState] = useState<"working" | "ok" | "error">("working");
   const [msg, setMsg] = useState("");
   const ran = useRef(false);
   useEffect(() => {
-    if (ran.current) return;
+    if (ran.current || !token) return;
     ran.current = true;
-    api.post("/api/auth/verify-email", { token: params.get("token") ?? "" })
+    api.post("/api/auth/verify-email", { token })
       .then(() => setState("ok"))
       .catch((e) => { setMsg(errorMessage(e)); setState("error"); });
-  }, [params]);
+  }, [token]);
+  if (!token) {
+    return <AuthCard title="Verify your email" subtitle="Enter the code we emailed you."><VerifyCodeForm email={params.get("email") ?? ""} /></AuthCard>;
+  }
   return (
     <AuthCard title="Email verification">
       {state === "working" && <Spinner label="Verifying" />}
@@ -50,8 +99,16 @@ export function ForgotPasswordPage() {
     catch (x) { setErr(errorMessage(x)); }
     finally { setBusy(false); }
   };
+  if (res?.status === "code_sent") {
+    return (
+      <AuthCard title="Reset your password" subtitle={res.message}>
+        <ResetWithCode email={email} />
+        {res.dev_link && <p className="mt-4 text-center text-sm"><Link className="link" to={new URL(res.dev_link).pathname + new URL(res.dev_link).search}>Older account? Reset with a link instead</Link></p>}
+      </AuthCard>
+    );
+  }
   return (
-    <AuthCard title="Reset your password" subtitle="We'll email you a link that expires in one hour.">
+    <AuthCard title="Reset your password" subtitle="We'll email you a code or a link to set a new password.">
       {res ? (
         <div className="space-y-3">
           <Notice tone="ok">{res.message}</Notice>
@@ -69,11 +126,42 @@ export function ForgotPasswordPage() {
         <form onSubmit={submit} className="space-y-4">
           {err && <Notice tone="danger">{err}</Notice>}
           <Field label="Email" required>{(p) => <Input {...p} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />}</Field>
-          <Button type="submit" className="w-full" loading={busy}>Send reset link</Button>
+          <Button type="submit" className="w-full" loading={busy}>Send reset email</Button>
           <p className="text-center text-sm"><Link className="link" to="/login">Back to sign in</Link></p>
         </form>
       )}
     </AuthCard>
+  );
+}
+
+function ResetWithCode({ email }: { email: string }) {
+  const [code, setCode] = useState("");
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const check = passwordRule.safeParse(pw);
+    if (!check.success) return setErr(check.error.issues[0].message);
+    setBusy(true);
+    setErr(null);
+    try { await api.post("/api/auth/reset-password", { email, code, password: pw }); setOk(true); }
+    catch (x) { setErr(errorMessage(x)); }
+    finally { setBusy(false); }
+  };
+  if (ok) return <div className="space-y-4"><Notice tone="ok">Password updated.</Notice><Link to="/login"><Button className="w-full">Sign in</Button></Link></div>;
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      {err && <Notice tone="danger">{err}</Notice>}
+      <Field label="6-digit code from your email" required>
+        {(p) => <Input {...p} inputMode="numeric" autoComplete="one-time-code" maxLength={8} className={codeInputClass}
+          value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} />}
+      </Field>
+      <Field label="New password" hint="Hover or tap (i) to see the rules" required>{(p) => <PasswordInput {...p} showRules autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />}</Field>
+      <Button type="submit" className="w-full" loading={busy} disabled={code.length < 6} icon={<KeyRound className="h-4 w-4" />}>Update password</Button>
+      <p className="text-center text-sm"><Link className="link" to="/login">Back to sign in</Link></p>
+    </form>
   );
 }
 

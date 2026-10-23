@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MailCheck, Pill, Stethoscope } from "lucide-react";
 import clsx from "clsx";
 import { AuthCard } from "./AuthCard";
+import { VerifyCodeForm } from "./AccountFlows";
 import { Button, Checkbox, Field, Input, Select } from "@/components/ui/primitives";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Modal, Notice } from "@/components/ui/feedback";
@@ -61,6 +62,17 @@ export default function Register() {
     }
   };
 
+  if (done?.status === "verify_code") {
+    return (
+      <AuthCard title="Check your email" subtitle={`Enter the 6-digit code we sent to ${done.email}.`}>
+        {form.role === "doctor" && (
+          <Notice tone="info">After you verify your email, DoseWISE staff will check your medical registration before you can access any clinical features.</Notice>
+        )}
+        <div className="mt-4"><VerifyCodeForm email={done.email} /></div>
+      </AuthCard>
+    );
+  }
+
   if (done) {
     return (
       <AuthCard title="Check your email" subtitle="We sent a verification link to finish setting up your account.">
@@ -83,6 +95,11 @@ export default function Register() {
 
   return (
     <AuthCard title="Create your account" subtitle="Fields marked * are required." wide>
+      <Link to="/guest" className="mb-6 flex items-center gap-3 rounded-xl border border-primary/30 bg-primary-soft/60 p-3.5 transition hover:bg-primary-soft">
+        <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-ink"><Stethoscope className="h-5 w-5" /></span>
+        <span className="flex-1"><span className="block font-semibold">Doctor without an account? Use Guest / One-Time Doctor Access</span>
+          <span className="block text-xs text-ink-3">View a patient's record read-only with their Access ID. No sign-up needed.</span></span>
+      </Link>
       <form onSubmit={submit} className="space-y-5" noValidate>
         {error && <Notice tone="danger">{error}</Notice>}
         <fieldset>

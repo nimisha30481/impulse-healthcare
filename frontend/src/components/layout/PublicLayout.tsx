@@ -71,11 +71,11 @@ export function PublicLayout() {
           <div className="hidden items-center gap-2 xl:flex">
             <LanguageSelect compact />
             <ThemeToggle />
+            <Link to="/guest"><Button variant="outline" className="whitespace-nowrap" icon={<Stethoscope className="h-4 w-4" />}>Guest Doctor Access</Button></Link>
             {user ? (
-              <Link to={homeFor(user.role)}><Button>Open DoseWISE</Button></Link>
+              <Link to={homeFor(user.role)}><Button className="whitespace-nowrap">Open DoseWISE</Button></Link>
             ) : (
               <>
-                <Link to="/guest"><Button variant="outline" className="whitespace-nowrap" icon={<Stethoscope className="h-4 w-4" />}>Guest Doctor Access</Button></Link>
                 <Link to="/login" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-ink-2 hover:text-ink">Log In</Link>
                 <Link to="/register"><Button className="whitespace-nowrap">Get Started</Button></Link>
               </>
@@ -94,7 +94,7 @@ export function PublicLayout() {
                 {NAV.map((n) => (
                   <Link key={n.label} to={n.to} className="rounded-lg px-3 py-2.5 font-medium text-ink-2 hover:bg-surface-2">{n.label}</Link>
                 ))}
-                {!user && <Link to="/guest" className="rounded-lg px-3 py-2.5 font-semibold text-primary hover:bg-surface-2">Guest Doctor Access</Link>}
+                {<Link to="/guest" className="rounded-lg px-3 py-2.5 font-semibold text-primary hover:bg-surface-2">Guest Doctor Access</Link>}
                 <LanguageSelect />
                 <div className="mt-2 flex gap-2">
                   {user ? <Link className="flex-1" to={homeFor(user.role)}><Button className="w-full">Open DoseWISE</Button></Link> : <>

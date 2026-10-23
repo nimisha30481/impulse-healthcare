@@ -1,6 +1,7 @@
 """Prescription workflows: create, edit (new immutable version), discontinue, hold/resume.
 Every change is transactional with its dose updates, notifications, timeline entry and audit row."""
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
@@ -45,7 +46,9 @@ def _new_version(item: PrescriptionItem, order: MedicationOrder, version_no: int
 
 
 def _start_instant(order: MedicationOrder) -> datetime:
-    return datetime.combine(order.start_date, datetime.min.time(), tzinfo=timezone.utc)
+    # Midnight in the patient's time zone: with UTC midnight, a medicine starting "today" in India was
+    # treated as not started yet between 00:00 and 05:30 IST, so no doses were scheduled.
+    return datetime.combine(order.start_date, datetime.min.time(), tzinfo=ZoneInfo(order.timezone)).astimezone(timezone.utc)
 
 
 def _fanout(db: Session, patient_id: str, topic: str, ref: str) -> None:
@@ -72,7 +75,7 @@ def create(db: Session, doctor: User, patient: PatientProfile, orders: list[Medi
     db.flush()
     created_items = []
     for order in orders:
-        start = max(_start_instant(order), now) if order.start_date <= now.date() else _start_instant(order)
+        start = max(_start_instant(order), now)
         status = "draft" if not publish else ("active" if start <= now else "scheduled")
         item = PrescriptionItem(prescription_id=rx.id, patient_id=patient.id, catalogue_id=order.catalogue_id,
                                 status=status, current_version_no=1, lock_version=1)

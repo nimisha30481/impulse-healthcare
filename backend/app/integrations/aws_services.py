@@ -326,11 +326,17 @@ def geocode(text: str) -> Result:
     if not s.location_place_index:
         return Result("not_configured")
     try:
-        resp = client("location").search_place_index_for_text(IndexName=s.location_place_index, Text=text, MaxResults=1)
+        resp = client("location").search_place_index_for_text(IndexName=s.location_place_index, Text=text,
+                                                               MaxResults=5, FilterCountries=["IND"])
         if not resp["Results"]:
             return Result("ok", data=None)
-        lng, lat = resp["Results"][0]["Place"]["Geometry"]["Point"]
-        return Result("ok", data={"lat": lat, "lng": lng, "label": resp["Results"][0]["Place"].get("Label")})
+        # Among equally relevant hits prefer the plainest label: "Koramangala, Devanahalli, Bangalore" is a
+        # same-named village 40 km away, "Koramangala, Bangalore" is the neighbourhood people mean.
+        top = max(r.get("Relevance", 0) for r in resp["Results"])
+        best = min((r for r in resp["Results"] if r.get("Relevance", 0) == top),
+                   key=lambda r: len((r["Place"].get("Label") or "").split(",")))
+        lng, lat = best["Place"]["Geometry"]["Point"]
+        return Result("ok", data={"lat": lat, "lng": lng, "label": best["Place"].get("Label")})
     except Exception as e:  # noqa: BLE001
         return Result("failed", error=str(e)[:300])
 

@@ -129,14 +129,16 @@ def bedrock(s, env, region, wanted):
 
 def cognito(s, env, region, account):
     idp = s.client("cognito-idp")
-    pool_name = f"{NAME}-users"
+    # Matches DoseWISE's own password rule (8+ chars, upper, lower, number), so the app's sign-up form
+    # and Cognito never disagree. Supersedes the earlier "dosewise-users" pool (10-char minimum).
+    pool_name = f"{NAME}-accounts"
     pool = next((p["Id"] for p in idp.list_user_pools(MaxResults=60)["UserPools"] if p["Name"] == pool_name), None)
     if not pool:
         pool = idp.create_user_pool(
             PoolName=pool_name,
             UsernameAttributes=["email"],
             AutoVerifiedAttributes=["email"],
-            Policies={"PasswordPolicy": {"MinimumLength": 10, "RequireUppercase": True, "RequireLowercase": True,
+            Policies={"PasswordPolicy": {"MinimumLength": 8, "RequireUppercase": True, "RequireLowercase": True,
                                          "RequireNumbers": True, "RequireSymbols": False}},
             AccountRecoverySetting={"RecoveryMechanisms": [{"Priority": 1, "Name": "verified_email"}]},
         )["UserPool"]["Id"]
@@ -153,10 +155,13 @@ def cognito(s, env, region, account):
             AllowedOAuthFlows=["code"], AllowedOAuthFlowsUserPoolClient=True,
             AllowedOAuthScopes=["openid", "email", "phone", "profile"],
             CallbackURLs=[CALLBACK], SupportedIdentityProviders=["COGNITO"],
+            # DoseWISE's own sign-in form sends the password to Cognito server-side
+            ExplicitAuthFlows=["ALLOW_USER_PASSWORD_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"],
+            PreventUserExistenceErrors="ENABLED",
         )["UserPoolClient"]["ClientId"]
         ok("Cognito app client created")
     secret = idp.describe_user_pool_client(UserPoolId=pool, ClientId=client_id)["UserPoolClient"]["ClientSecret"]
-    prefix = f"{NAME}-{account[-6:]}"
+    prefix = f"{NAME}-login-{account[-6:]}"
     domain = idp.describe_user_pool(UserPoolId=pool)["UserPool"].get("Domain")
     if not domain:
         idp.create_user_pool_domain(Domain=prefix, UserPoolId=pool)

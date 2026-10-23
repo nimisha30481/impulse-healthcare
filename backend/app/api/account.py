@@ -13,6 +13,7 @@ from app.core import audit
 from app.core.database import get_db
 from app.core.deps import AuthContext, current_user, get_auth
 from app.core.security import hash_password, validate_password_strength, verify_password
+from app.integrations import cognito
 from app.models import (
     ConsentRecord,
     MedicalRecord,
@@ -87,17 +88,25 @@ def update_preferences(body: PreferencesIn, user: User = Depends(current_user), 
 
 class PasswordIn(BaseModel):
     current_password: str
-    new_password: str = Field(min_length=10, max_length=200)
+    new_password: str = Field(min_length=8, max_length=200)
 
 
 @router.post("/password")
 def change_password(body: PasswordIn, ctx: AuthContext = Depends(get_auth), db: Session = Depends(get_db)):
     user = ctx.user
-    if not verify_password(body.current_password, user.password_hash):
-        raise HTTPException(400, "Current password is incorrect")
     if err := validate_password_strength(body.new_password):
         raise HTTPException(400, err)
-    user.password_hash = hash_password(body.new_password)
+    if cognito.is_cognito_user(user):
+        try:
+            cognito.change_password(user.email, body.current_password, body.new_password)
+        except cognito.CognitoError as e:
+            if e.code == "NotAuthorizedException":
+                raise HTTPException(400, "Current password is incorrect")
+            raise e.http()
+    elif not verify_password(body.current_password, user.password_hash):
+        raise HTTPException(400, "Current password is incorrect")
+    else:
+        user.password_hash = hash_password(body.new_password)
     for s in db.execute(select(UserSession).where(UserSession.user_id == user.id, UserSession.id != ctx.session.id,
                                                   UserSession.revoked_at.is_(None))).scalars():
         s.revoked_at = utcnow()
@@ -140,7 +149,7 @@ class DisableMfaIn(BaseModel):
 
 @router.post("/mfa/disable")
 def mfa_disable(body: DisableMfaIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    if not verify_password(body.password, user.password_hash):
+    if not cognito.check_password(user, body.password):
         raise HTTPException(400, "Password is incorrect")
     if user.role in ("doctor", "support", "admin"):
         raise HTTPException(400, "MFA is required for clinical and staff accounts")
@@ -221,7 +230,7 @@ class CloseIn(BaseModel):
 def close_account(body: CloseIn, response: Response, ctx: AuthContext = Depends(get_auth), db: Session = Depends(get_db)):
     """Closes sign-in immediately. Clinical records are retained for the configured legal retention
     period (see docs/DATA_GOVERNANCE.md) and are not deleted by this action."""
-    if body.confirm != "CLOSE" or not verify_password(body.password, ctx.user.password_hash):
+    if body.confirm != "CLOSE" or not cognito.check_password(ctx.user, body.password):
         raise HTTPException(400, "Type CLOSE and enter your password to confirm")
     ctx.user.closed_at = utcnow()
     ctx.user.is_active = False

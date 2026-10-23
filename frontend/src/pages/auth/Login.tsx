@@ -6,7 +6,7 @@ import { AuthCard } from "./AuthCard";
 import { Button, Field, Input } from "@/components/ui/primitives";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Notice } from "@/components/ui/feedback";
-import { api, errorMessage } from "@/lib/api";
+import { ApiError, api, errorMessage } from "@/lib/api";
 import { homeFor, useAuth } from "@/lib/auth";
 import { loginSchema, zodErrors } from "@/lib/schemas";
 
@@ -32,6 +32,7 @@ export default function Login() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [unverified, setUnverified] = useState(false);
 
   const finish = async (role?: string) => {
     await qc.invalidateQueries({ queryKey: ["session"] });
@@ -52,6 +53,7 @@ export default function Login() {
       await finish(r.user.role);
     } catch (err) {
       setError(errorMessage(err));
+      setUnverified(err instanceof ApiError && err.status === 403);
     } finally {
       setBusy(null);
     }
@@ -77,11 +79,9 @@ export default function Login() {
         <span className="flex-1"><span className="block font-semibold">Guest / One-Time Doctor Access</span>
           <span className="block text-xs text-ink-3">No account needed: view a patient's record with their Access ID</span></span>
       </Link>
-      {session?.auth_provider === "cognito" ? (
-        <a href="/api/auth/cognito/login"><Button className="w-full" size="lg">Continue to secure sign-in</Button></a>
-      ) : (
+      {(
         <form onSubmit={submit} className="space-y-4" noValidate>
-          {error && <Notice tone="danger">{error}</Notice>}
+          {error && <Notice tone="danger">{error}{unverified && <> <Link className="link" to={`/verify-email?email=${encodeURIComponent(form.email)}`}>Enter your code</Link></>}</Notice>}
           <Field label="Email" error={errors.email} required>
             {(p) => <Input {...p} type="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />}
           </Field>

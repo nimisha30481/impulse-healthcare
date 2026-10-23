@@ -84,12 +84,18 @@ By hand:
    COGNITO_DOMAIN=xxxx.auth.ap-south-1.amazoncognito.com
    ```
 
-Good to know:
-- Login and sign-up then happen on the Cognito page. DoseWISE's own registration form (Aadhaar
-  fields and so on) is skipped, and patients fill in their profile later.
-- A first Cognito sign-in always creates a **patient** account. Doctors are still verified the
-  usual way.
-- To go back to normal login, set `AUTH_PROVIDER=local`.
+How it works once switched on:
+- DoseWISE's **own** sign-up and sign-in forms stay, with every field the brief requires (mobile,
+  doctor council and registration number, and so on). Behind them, Cognito stores the account and
+  the password.
+- New users get a **6-digit code by email** to verify. "Forgot password" also emails a code.
+- The app client must allow `ALLOW_USER_PASSWORD_AUTH`, and the pool's minimum password length
+  must be **8** to match DoseWISE's rule. The script sets both (pool `dosewise-accounts`).
+- Accounts made before the switch, and the demo logins, keep working with their local passwords.
+- Two-step verification (TOTP) and doctor verification still run in DoseWISE as before.
+- Cognito's built-in email sender allows about 50 emails a day. For more, connect Amazon SES in
+  the pool's **Messaging** settings.
+- To go back to local login, set `AUTH_PROVIDER=local`.
 
 ## Step 3. Amazon Bedrock: AI drug–drug interaction screening
 
