@@ -113,7 +113,7 @@ def _send_link(db: Session, user: User, purpose: str, token: str) -> dict:
     returned in the response (clearly labelled) so the flow can be completed locally."""
     path = {"verify_email": "/verify-email", "reset_password": "/reset-password"}[purpose]
     link = f"{get_settings().frontend_origin}{path}?token={token}"
-    res = aws_services.send_email(user.email, "IMPULSE account", f"Use this link within 24 hours: {link}")
+    res = aws_services.send_email(user.email, "DoseWISE account", f"Use this link within 24 hours: {link}")
     out = {"email_delivery": res.state if res.state != "ok" else "sent"}
     if res.state != "ok" and get_settings().is_dev:
         out["dev_link"] = link

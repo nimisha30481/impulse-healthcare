@@ -106,9 +106,9 @@ def invite(body: InviteIn, user: User = Depends(require_roles("patient")), db: S
     db.add(rel)
     db.flush()
     link = f"{get_settings().frontend_origin}/caregiver/accept?token={token}"
-    sent = aws_services.send_email(contact, "You've been invited to IMPULSE",
+    sent = aws_services.send_email(contact, "You've been invited to DoseWISE",
                                    f"{user.full_name} invited you to help with their care. Accept: {link}") \
-        if "@" in contact else aws_services.send_sms(contact, f"IMPULSE: {user.full_name} invited you. {link}")
+        if "@" in contact else aws_services.send_sms(contact, f"DoseWISE: {user.full_name} invited you. {link}")
     _consent(db, p.id, user, "invite", "care_relationship", rel.id, rel.scopes, note=contact)
     audit.record(db, action="caregiver_invited", resource_type="care_relationship", resource_id=rel.id,
                  patient_id=p.id, user=user)

@@ -80,7 +80,7 @@ def integration_status() -> list[dict]:
         row("Drug interaction knowledge source", "Pairwise drug-drug interactions",
             s.interaction_source == "http" and bool(s.interaction_source_url),
             "Pairwise interaction checking shown as UNAVAILABLE; duplicate-ingredient and documented-allergy "
-            "checks still run on IMPULSE data", 3, "Requires a licensed clinical knowledge provider"),
+            "checks still run on DoseWISE data", 3, "Requires a licensed clinical knowledge provider"),
         row("Amazon Timestream for InfluxDB", "Adherence time-series analytics", bool(s.timestream_influx_url),
             "Adherence trends computed in SQL from medication events", 3,
             "Timestream for LiveAnalytics closed to new customers (June 2025); InfluxDB edition is the AWS alternative"),

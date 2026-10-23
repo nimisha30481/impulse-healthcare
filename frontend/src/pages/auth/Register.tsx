@@ -46,7 +46,7 @@ export default function Register() {
           <span className="grid h-14 w-14 place-items-center rounded-2xl bg-ok-soft text-ok"><MailCheck className="h-7 w-7" /></span>
           <p className="text-sm text-ink-2">{done.message}</p>
           {form.role === "doctor" && (
-            <Notice tone="info">After you verify your email, IMPULSE staff will check your medical registration before you can access any clinical features.</Notice>
+            <Notice tone="info">After you verify your email, DoseWISE staff will check your medical registration before you can access any clinical features.</Notice>
           )}
           {done.dev_link && (
             <Notice tone="warn" title="Development mode: email is not configured">

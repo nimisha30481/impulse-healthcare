@@ -52,7 +52,7 @@ export default function PatientDashboard() {
             action={<Link to="/patient/medicines" className="link text-sm">All medicines</Link>} />
           <div className="space-y-3" id="today">
             {q.isLoading ? [0, 1, 2].map((i) => <Skeleton key={i} className="h-32" />) :
-              doses.length === 0 ? <EmptyState icon={<Pill className="h-6 w-6" />} title="Nothing scheduled today" body="Medicines your doctor prescribes in IMPULSE appear here with reminders." /> :
+              doses.length === 0 ? <EmptyState icon={<Pill className="h-6 w-6" />} title="Nothing scheduled today" body="Medicines your doctor prescribes in DoseWISE appear here with reminders." /> :
               doses.map((dose: any, i: number) => (
                 <DoseCard key={dose.id} dose={dose} patientId={pid} index={i} detailHref={`/patient/medicines/${dose.item_id}`} />
               ))}

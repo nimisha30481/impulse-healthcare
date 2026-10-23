@@ -66,7 +66,7 @@ export default function Login() {
   };
 
   return (
-    <AuthCard title="Welcome back" subtitle="Sign in to your IMPULSE account.">
+    <AuthCard title="Welcome back" subtitle="Sign in to your DoseWISE account.">
       {session?.auth_provider === "cognito" ? (
         <a href="/api/auth/cognito/login"><Button className="w-full" size="lg">Continue to secure sign-in</Button></a>
       ) : (
@@ -83,7 +83,7 @@ export default function Login() {
             <Link to="/forgot-password" className="link text-sm">Forgot password?</Link>
           </div>
           <Button type="submit" size="lg" className="w-full" loading={busy === "login"}>Sign in</Button>
-          <p className="text-center text-sm text-ink-3">New to IMPULSE? <Link to="/register" className="link">Create an account</Link></p>
+          <p className="text-center text-sm text-ink-3">New to DoseWISE? <Link to="/register" className="link">Create an account</Link></p>
         </form>
       )}
 

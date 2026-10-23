@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, Moon, Sun, X } from "lucide-react";
@@ -58,7 +58,7 @@ export function PublicLayout() {
       </a>
       <header className={clsx("sticky top-0 z-40 transition-all", scrolled ? "border-b border-line bg-bg/85 backdrop-blur-md" : "bg-transparent")}>
         <nav className="container-page flex h-16 items-center justify-between gap-4" aria-label="Main">
-          <Link to="/" aria-label="IMPULSE home"><Logo /></Link>
+          <Link to="/" aria-label="DoseWISE home"><Logo /></Link>
           <div className="hidden items-center gap-1 xl:flex">
             {NAV.map((n) => (
               <NavLink key={n.label} to={n.to}
@@ -71,7 +71,7 @@ export function PublicLayout() {
           <div className="hidden items-center gap-2 xl:flex">
             <ThemeToggle />
             {user ? (
-              <Link to={homeFor(user.role)}><Button>Open IMPULSE</Button></Link>
+              <Link to={homeFor(user.role)}><Button>Open DoseWISE</Button></Link>
             ) : (
               <>
                 <Link to="/login" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-ink-2 hover:text-ink">Log In</Link>
@@ -93,7 +93,7 @@ export function PublicLayout() {
                   <Link key={n.label} to={n.to} className="rounded-lg px-3 py-2.5 font-medium text-ink-2 hover:bg-surface-2">{n.label}</Link>
                 ))}
                 <div className="mt-2 flex gap-2">
-                  {user ? <Link className="flex-1" to={homeFor(user.role)}><Button className="w-full">Open IMPULSE</Button></Link> : <>
+                  {user ? <Link className="flex-1" to={homeFor(user.role)}><Button className="w-full">Open DoseWISE</Button></Link> : <>
                     <Link className="flex-1" to="/login"><Button variant="outline" className="w-full">Log In</Button></Link>
                     <Link className="flex-1" to="/register"><Button className="w-full">Get Started</Button></Link>
                   </>}
@@ -123,7 +123,7 @@ function Footer() {
           <Logo />
           <p className="mt-4 max-w-xs text-sm text-ink-3">Better medication management. More connected care.</p>
           <p className="mt-4 max-w-xs text-xs text-ink-3">
-            IMPULSE is in development. It does not provide emergency services â€” in an emergency in India, call 112.
+            DoseWISE is in development. It does not provide emergency services — in an emergency in India, call 112.
           </p>
         </div>
         {cols.map((c) => (
@@ -139,7 +139,7 @@ function Footer() {
       </div>
       <div className="border-t border-line">
         <div className="container-page flex flex-col gap-2 py-5 text-xs text-ink-3 sm:flex-row sm:justify-between">
-          <span>Â© {new Date().getFullYear()} IMPULSE. All demo data is fictional.</span>
+          <span>© {new Date().getFullYear()} DoseWISE. All demo data is fictional.</span>
           <span>No certifications, partnerships or regulatory approvals are claimed.</span>
         </div>
       </div>

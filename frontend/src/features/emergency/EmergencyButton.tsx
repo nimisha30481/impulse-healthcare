@@ -6,7 +6,7 @@ import { Modal, Notice, useToast } from "@/components/ui/feedback";
 import { api, errorMessage } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 
-/** Visually distinct from routine reminders (solid red, siren icon). IMPULSE never claims to
+/** Visually distinct from routine reminders (solid red, siren icon). DoseWISE never claims to
  *  dispatch responders: calling 112 is done by the user's own phone. */
 export function EmergencyButton({ patientId, compact }: { patientId: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -78,7 +78,7 @@ export function EmergencyDialog({ open, onClose, patientId }: { open: boolean; o
           </Notice>
         )}
         <Notice tone="warn" title="Service limitations">
-          IMPULSE does not dispatch ambulances or emergency responders. Care-team alerts are reviewed by people during
+          DoseWISE does not dispatch ambulances or emergency responders. Care-team alerts are reviewed by people during
           support hours only. If you are in danger, call 112.
         </Notice>
       </div>

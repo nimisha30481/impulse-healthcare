@@ -66,7 +66,7 @@ export function MedicineDetailView({ patientId, itemId, back }: { patientId: str
         <Block icon={<BookOpen className="h-5 w-5" />} title="What is this medicine?">
           {m.education?.available ? <p>{m.education.content.simple}</p> : (
             <>
-              <p>Reliable, reviewed information for this medicine isn't connected to IMPULSE yet, so we don't show a description here.</p>
+              <p>Reliable, reviewed information for this medicine isn't connected to DoseWISE yet, so we don't show a description here.</p>
               <a className="link mt-2 inline-flex items-center gap-1" href={`https://medlineplus.gov/druginfo/meds.html`} target="_blank" rel="noreferrer">
                 Look it up on MedlinePlus (U.S. National Library of Medicine) <ExternalLink className="h-3.5 w-3.5" />
               </a>
@@ -75,7 +75,7 @@ export function MedicineDetailView({ patientId, itemId, back }: { patientId: str
         </Block>
         <Block icon={<HelpCircle className="h-5 w-5" />} title="Why am I taking it?">
           {v.indication ? <p>Your prescription records the reason as: <b className="text-ink">{v.indication}</b>.</p> :
-            <p>The reason wasn't recorded on this prescription. Ask your doctor — IMPULSE never guesses a diagnosis from a medicine name.</p>}
+            <p>The reason wasn't recorded on this prescription. Ask your doctor — DoseWISE never guesses a diagnosis from a medicine name.</p>}
         </Block>
         <Block icon={<CalendarClock className="h-5 w-5" />} title="When should I take it?">
           {v.is_prn ? <p>Only when needed, as your doctor explained.</p> : <p><b className="text-ink">{s?.times_of_day?.join(", ")}</b>, {days}{s?.timezone ? ` (${s.timezone})` : ""}.</p>}

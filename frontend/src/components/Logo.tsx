@@ -1,6 +1,6 @@
 import clsx from "clsx";
 
-/** IMPULSE wordmark: a rounded square with a heartbeat line that resolves into a steady line -
+/** DoseWISE wordmark: a rounded square with a heartbeat line that resolves into a steady line -
  *  "a pulse, kept on track". */
 export function LogoMark({ size = 32, className }: { size?: number; className?: string }) {
   return (
@@ -21,7 +21,9 @@ export function Logo({ className, size = 30 }: { className?: string; size?: numb
   return (
     <span className={clsx("inline-flex items-center gap-2.5", className)}>
       <LogoMark size={size} />
-      <span className="font-display text-[19px] font-extrabold tracking-[0.12em] text-ink">IMPULSE</span>
+      <span className="font-display text-[20px] font-extrabold tracking-tight text-ink">
+        Dose<span className="text-primary">WISE</span>
+      </span>
     </span>
   );
 }

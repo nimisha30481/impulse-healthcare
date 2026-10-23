@@ -154,7 +154,7 @@ def _ensure_doctor_access(db: Session, patient_id: str, doctor_id: str, granted_
     if not existing:
         db.add(DoctorPatientAccess(patient_id=patient_id, doctor_user_id=doctor_id,
                                    scopes=["clinical.read", "clinical.write", "prescribe"],
-                                   purpose="Consultation booked through IMPULSE", granting_authority="appointment",
+                                   purpose="Consultation booked through DoseWISE", granting_authority="appointment",
                                    granted_by=granted_by, starts_at=utcnow(), expires_at=utcnow() + timedelta(days=90)))
 
 

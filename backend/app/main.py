@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
         task.cancel()
 
 
-app = FastAPI(title="IMPULSE API", version="0.1.0", lifespan=lifespan,
+app = FastAPI(title="DoseWISE API", version="0.1.0", lifespan=lifespan,
               docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 app.add_middleware(

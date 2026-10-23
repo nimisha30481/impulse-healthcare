@@ -13,9 +13,9 @@ from app.services import realtime
 
 # Insecure channels get a generic message; details are only visible after signing in.
 GENERIC_TEXT = {
-    "medication_reminder": "IMPULSE: you have a medication reminder. Open the app to view it.",
-    "appointment_reminder": "IMPULSE: you have an upcoming appointment. Open the app for details.",
-    "default": "IMPULSE: you have a new update. Sign in to view it.",
+    "medication_reminder": "DoseWISE: you have a medication reminder. Open the app to view it.",
+    "appointment_reminder": "DoseWISE: you have an upcoming appointment. Open the app for details.",
+    "default": "DoseWISE: you have a new update. Sign in to view it.",
 }
 
 PREF_KEYS = {
@@ -92,7 +92,7 @@ def _deliver(n: Notification, user: User) -> None:
         return
     text = GENERIC_TEXT.get(n.category, GENERIC_TEXT["default"])
     if n.channel == "email":
-        res = aws_services.send_email(user.email, "IMPULSE update", text)
+        res = aws_services.send_email(user.email, "DoseWISE update", text)
     elif n.channel == "sms":
         res = aws_services.send_sms(user.phone or "", text)
     else:

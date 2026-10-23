@@ -16,7 +16,7 @@ export default function CaregiverAccept() {
   const m = useMutation({ mutationFn: () => api.post("/api/caregiver/invitations/accept", { token }), onSuccess: setRes });
   const next = encodeURIComponent(`/caregiver/accept?token=${token}`);
   return (
-    <AuthCard title="Caregiver invitation" subtitle="Someone asked you to help with their care on IMPULSE.">
+    <AuthCard title="Caregiver invitation" subtitle="Someone asked you to help with their care on DoseWISE.">
       {loading ? null : !user ? (
         <div className="space-y-3">
           <Notice tone="info">Sign in or create a <b>caregiver</b> account with the email or phone the invitation was sent to. Never use the patient's own login.</Notice>

@@ -49,7 +49,7 @@ def medication_request(item: PrescriptionItem) -> dict:
             "route": {"text": v.route},
             "timing": {"repeat": {"timeOfDay": [f"{t}:00" for t in (v.schedule.times_of_day if v.schedule else [])]}},
         }],
-        "note": [{"text": f"IMPULSE version {v.version_no}"}],
+        "note": [{"text": f"DoseWISE version {v.version_no}"}],
         "meta": _meta("clinician_verified"),
     }
 

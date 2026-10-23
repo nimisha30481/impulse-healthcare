@@ -160,7 +160,7 @@ def discontinue(db: Session, doctor: User, item: PrescriptionItem, *, effective_
     patient = db.get(PatientProfile, item.patient_id)
     when = "now" if eff <= now else eff.strftime("%d %b %Y")
     _notify_patient_and_caregivers(db, patient, "prescription_change", "Medicine discontinued",
-                                   f"{v.generic_name} is discontinued (effective {when}). Open IMPULSE for "
+                                   f"{v.generic_name} is discontinued (effective {when}). Open DoseWISE for "
                                    f"your doctor's instructions.", f"rx-stop:{item.id}")
     db.add(MedicalRecord(patient_id=patient.id, record_type="prescription", title=f"Discontinued: {v.generic_name}",
                          summary=reason, occurred_at=now, doctor_user_id=doctor.id, medication_names=[v.generic_name],

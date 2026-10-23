@@ -249,7 +249,7 @@ function Privacy() {
   return (
     <div className="space-y-6">
       <Panel title="Data sharing" desc="Changes are recorded in your consent history.">
-        <Checkbox checked={!!ds.research} onChange={(v) => m.mutate({ data_sharing: { ...ds, research: v } })} label="Allow de-identified data to be used to improve IMPULSE" description="Off by default. No research programme is active today." />
+        <Checkbox checked={!!ds.research} onChange={(v) => m.mutate({ data_sharing: { ...ds, research: v } })} label="Allow de-identified data to be used to improve DoseWISE" description="Off by default. No research programme is active today." />
         <Checkbox checked={ds.share_with_care_team !== false} onChange={(v) => m.mutate({ data_sharing: { ...ds, share_with_care_team: v } })} label="Show my recent activity to authorised care team members" />
         {user!.role === "patient" && <p className="text-sm"><Link to="/patient/care-team" className="link">Manage who has access, consent history and access history →</Link></p>}
       </Panel>

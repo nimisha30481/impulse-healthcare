@@ -1,4 +1,4 @@
-﻿from datetime import date, datetime
+from datetime import date, datetime
 
 from sqlalchemy import JSON, Boolean, Date, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -44,7 +44,7 @@ class PatientProfile(IdMixin, TimestampMixin, Base):
     __tablename__ = "patient_profiles"
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
-    mrn: Mapped[str] = mapped_column(String(32), unique=True)  # IMPULSE patient identifier
+    mrn: Mapped[str] = mapped_column(String(32), unique=True)  # DoseWISE patient identifier
     date_of_birth: Mapped[date | None] = mapped_column(Date)
     sex: Mapped[str | None] = mapped_column(String(24))
     blood_group: Mapped[str | None] = mapped_column(String(8))

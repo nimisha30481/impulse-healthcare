@@ -47,5 +47,5 @@ export function useRealtime(enabled: boolean) {
 /** Browser notifications carry no medical detail - just a prompt to open the app. */
 function maybeBrowserNotify() {
   if (typeof Notification === "undefined" || Notification.permission !== "granted" || !document.hidden) return;
-  new Notification("IMPULSE", { body: "You have a new update. Open IMPULSE to view it.", tag: "impulse-update" });
+  new Notification("DoseWISE", { body: "You have a new update. Open DoseWISE to view it.", tag: "impulse-update" });
 }

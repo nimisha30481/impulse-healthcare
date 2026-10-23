@@ -294,7 +294,7 @@ export default function Records() {
       {tab === "timeline" && <Timeline patientId={pid} canRequestCorrection />}
       {tab === "health" && <HealthOverview patientId={pid} />}
       {tab === "documents" && <Documents patientId={pid} openUpload={!!params.get("upload")} />}
-      <p className="mt-8 flex items-center gap-1.5 text-xs text-ink-3"><Building2 className="h-3.5 w-3.5" /> Records from providers outside IMPULSE aren't included unless uploaded or imported.</p>
+      <p className="mt-8 flex items-center gap-1.5 text-xs text-ink-3"><Building2 className="h-3.5 w-3.5" /> Records from providers outside DoseWISE aren't included unless uploaded or imported.</p>
     </>
   );
 }

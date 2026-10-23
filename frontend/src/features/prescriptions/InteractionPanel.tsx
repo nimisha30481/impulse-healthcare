@@ -73,7 +73,7 @@ export function InteractionPanel({ a, reviewable = true }: { a: Assessment; revi
             <Button size="sm" variant="outline" onClick={() => review.mutate("will_modify")}>I'll modify the prescription</Button>
             <Button size="sm" variant="danger" disabled={!note.trim()} onClick={() => review.mutate("override")}>Proceed with documented reason</Button>
           </div>
-          <p className="text-xs text-ink-3">IMPULSE never changes or stops a medicine because of an alert — that's your decision.</p>
+          <p className="text-xs text-ink-3">DoseWISE never changes or stops a medicine because of an alert — that's your decision.</p>
         </div>
       ))}
     </div>

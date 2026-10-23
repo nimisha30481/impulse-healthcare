@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # --- core ---
     environment: str = "development"  # development | test | staging | production
-    app_name: str = "IMPULSE"
+    app_name: str = "DoseWISE"
     # SQLite keeps local setup to zero dependencies. Use PostgreSQL everywhere else:
     # postgresql+psycopg://user:pass@host:5432/impulse
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'impulse_dev.db').as_posix()}"

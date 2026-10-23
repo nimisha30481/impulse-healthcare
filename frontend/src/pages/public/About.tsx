@@ -3,11 +3,11 @@ import { HeartHandshake, ShieldCheck, Target } from "lucide-react";
 export default function About() {
   return (
     <div className="container-page max-w-4xl py-16">
-      <p className="text-sm font-semibold uppercase tracking-wider text-primary">About IMPULSE</p>
+      <p className="text-sm font-semibold uppercase tracking-wider text-primary">About DoseWISE</p>
       <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">One trustworthy view of every medicine.</h1>
       <p className="mt-6 text-lg leading-relaxed text-ink-2">
         People often receive prescriptions from several doctors, while dosage changes, allergies and treatment histories
-        sit in different hospitals and pharmacies. IMPULSE brings patients, doctors, caregivers and care coordinators onto
+        sit in different hospitals and pharmacies. DoseWISE brings patients, doctors, caregivers and care coordinators onto
         one platform so the medication record stays current, every change is versioned, and help arrives when someone
         stops responding.
       </p>
@@ -25,7 +25,7 @@ export default function About() {
         ))}
       </div>
       <p className="mt-12 rounded-2xl border border-dashed border-line p-5 text-sm text-ink-3">
-        IMPULSE is under active development. It is not yet a certified medical device and makes no regulatory compliance
+        DoseWISE is under active development. It is not yet a certified medical device and makes no regulatory compliance
         claims. All people, hospitals and records in the demo are fictional.
       </p>
     </div>

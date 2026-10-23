@@ -289,7 +289,7 @@ def decide_refill(refill_id: str, body: RefillDecision, user: User = Depends(Doc
     r.reviewed_by, r.reviewed_at, r.review_note = user.id, utcnow(), body.note
     p = db.get(PatientProfile, r.patient_id)
     notifications.notify(db, p.user, category="prescription_change", title=f"Refill {r.status}",
-                         body=body.note or "Open IMPULSE for details.", patient_id=p.id, link="/patient/medicines")
+                         body=body.note or "Open DoseWISE for details.", patient_id=p.id, link="/patient/medicines")
     audit.record(db, action=f"refill_{r.status}", resource_type="refill", resource_id=r.id, patient_id=p.id, user=user)
     db.commit()
     return {"status": r.status}

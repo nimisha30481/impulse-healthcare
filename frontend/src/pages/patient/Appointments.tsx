@@ -99,7 +99,7 @@ export function AppointmentsView({ patientId, canBook }: { patientId: string; ca
             {view.location && <p className="flex items-center gap-2"><MapPin className="h-4 w-4" />{view.location.name}, {view.location.address}</p>}
             <p className="flex items-center gap-2"><Video className="h-4 w-4" />{titleCase(view.consultation_type)}</p>
             {view.reason && <p><b>Reason:</b> {view.reason}</p>}
-            {view.consultation_type === "video" && <Notice tone="info">Joining video consultations from IMPULSE isn't available yet.</Notice>}
+            {view.consultation_type === "video" && <Notice tone="info">Joining video consultations from DoseWISE isn't available yet.</Notice>}
             <div><p className="font-semibold">History</p><ul className="mt-1 text-ink-3">{view.history.map((h, i) => <li key={i}>{fmtDateTime(h.at)} — {h.event}</li>)}</ul></div>
           </div>
         )}

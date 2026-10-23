@@ -81,7 +81,7 @@ def generate(db: Session, doctor: User, patient: PatientProfile, appointment_id:
                               "sources": [{"type": "prescription_item", "id": it.id} for it, _ in group]})
     sections["current_medications"] = {"title": "Current medications", "items": meds}
     if not meds:
-        missing.append("No current medications recorded in IMPULSE")
+        missing.append("No current medications recorded in DoseWISE")
 
     since = now - timedelta(days=90)
     changes = db.execute(select(PrescriptionVersion).join(PrescriptionItem).where(
@@ -128,13 +128,13 @@ def generate(db: Session, doctor: User, patient: PatientProfile, appointment_id:
 
     content = {
         "generated_at": now.isoformat(),
-        "label": "Automatically assembled from IMPULSE records. Verify against source records before clinical use.",
+        "label": "Automatically assembled from DoseWISE records. Verify against source records before clinical use.",
         "sections": sections,
         "missing_information": missing,
         "conflicts": conflicts,
         "uncertainty": [
             "Patient-reported and OCR-extracted items are marked by provenance and are not clinician-verified.",
-            "Records held outside IMPULSE are not included.",
+            "Records held outside DoseWISE are not included.",
         ],
     }
     brief = ClinicalBrief(patient_id=patient.id, generated_for=doctor.id, appointment_id=appointment_id,

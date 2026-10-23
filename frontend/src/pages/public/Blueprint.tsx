@@ -58,7 +58,7 @@ export default function Blueprint() {
   return (
     <div className="container-page max-w-6xl py-12">
       <p className="text-sm font-semibold uppercase tracking-wider text-primary">Project blueprint</p>
-      <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">What IMPULSE is, how it's built, and why.</h1>
+      <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">What DoseWISE is, how it's built, and why.</h1>
       <p className="mt-4 max-w-3xl text-lg text-ink-2">
         The idea, design and plan on one page: problem, AWS choices, architecture and security, MVP scope,
         scalability and cost, what's new, and who presents what.
@@ -123,7 +123,7 @@ export default function Blueprint() {
       <Section id="aws" icon={<Cloud className="h-5 w-5" />} title="2. AWS service selection"
         lead="The MVP runs on 12 services, each with a job the product can't do without. Everything else is added only when a named trigger is reached — nothing is there for decoration.">
         <h3 className="mb-3 font-bold">MVP (Phase 1) — deployed by our CDK stack</h3>
-        <Table head={["Service", "Its single job in IMPULSE", "Why this one (and not…)"]} rows={[
+        <Table head={["Service", "Its single job in DoseWISE", "Why this one (and not…)"]} rows={[
           ["Amazon Cognito", "Sign-up, email verification, MFA, password recovery", "Managed identity with MFA; we don't store patient passwords in our own DB"],
           ["API Gateway (HTTP API)", "One HTTPS entry point with throttling", "Cheaper and simpler than REST API; built-in rate limits"],
           ["AWS Lambda", "Runs the FastAPI backend, the 1-minute reminder tick and workflow steps", "Pay per request; no idle servers for a pilot"],
@@ -299,7 +299,7 @@ export default function Blueprint() {
 
       {/* 6 ------------------------------------------------------------------ */}
       <Section id="innovation" icon={<Lightbulb className="h-5 w-5" />} title="6. Innovation & differentiation"
-        lead="Typical reminder apps track one person's own list. IMPULSE coordinates the whole care team around one versioned record — and refuses to fake certainty.">
+        lead="Typical reminder apps track one person's own list. DoseWISE coordinates the whole care team around one versioned record — and refuses to fake certainty.">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             ["Honest adherence", "'Reported taken', 'reported missed' and 'unconfirmed' stay separate; silence is never counted as taken, missed or an emergency."],

@@ -25,7 +25,7 @@ from app.models.base import utcnow
 router = APIRouter(prefix="/api/support", tags=["support"])
 Staff = require_roles("support")
 
-OPERATIONAL_NOTE = ("Cases are reviewed by people during staffed hours. IMPULSE does not provide real-time or "
+OPERATIONAL_NOTE = ("Cases are reviewed by people during staffed hours. DoseWISE does not provide real-time or "
                     "24/7 monitoring and does not dispatch emergency services.")
 
 
@@ -156,7 +156,7 @@ def escalate(case_id: str, body: EscalateIn, user: User = Depends(Staff), db: Se
     c = _own_case(db, user, case_id)
     c.status, c.priority = "escalated", body.priority
     c.history = [*c.history, {"at": utcnow().isoformat(), "event": f"escalated: {body.reason}", "by": user.id}]
-    res = aws_services.ops_alert(f"IMPULSE case escalated ({body.priority})", f"Case {c.id}: {body.reason[:500]}")
+    res = aws_services.ops_alert(f"DoseWISE case escalated ({body.priority})", f"Case {c.id}: {body.reason[:500]}")
     audit.record(db, action="support_case_escalated", resource_type="support_case", resource_id=c.id,
                  patient_id=c.patient_id, user=user, reason=body.reason[:300])
     db.commit()

@@ -2,7 +2,7 @@
 
 The backend exchanges the code server-side (client secret never reaches the browser), verifies
 the ID token signature against the pool's JWKS, checks issuer/audience/expiry, then opens a normal
-IMPULSE server-side session. Cognito groups are NOT used for patient-level authorisation - that is
+DoseWISE server-side session. Cognito groups are NOT used for patient-level authorisation - that is
 always done by app/services/permissions.py.
 """
 from functools import lru_cache

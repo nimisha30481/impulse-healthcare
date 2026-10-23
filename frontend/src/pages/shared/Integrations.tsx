@@ -19,7 +19,7 @@ export default function Integrations() {
     <>
       <PageHeader title="Platform status" subtitle="Which AWS services this environment actually uses. 'Configured' means credentials are set — not that the integration has been tested."
         eyebrow={<span className="inline-flex items-center gap-1"><Cloud className="h-4 w-4" />AWS integrations</span>} />
-      {q.data && <div className="mb-5"><Notice tone="info">Environment: <b>{q.data.environment}</b> · Sign-in: <b>{q.data.auth_provider === "cognito" ? "Amazon Cognito" : "IMPULSE local auth"}</b>. Full details: docs/AWS_ARCHITECTURE.md.</Notice></div>}
+      {q.data && <div className="mb-5"><Notice tone="info">Environment: <b>{q.data.environment}</b> · Sign-in: <b>{q.data.auth_provider === "cognito" ? "Amazon Cognito" : "DoseWISE local auth"}</b>. Full details: docs/AWS_ARCHITECTURE.md.</Notice></div>}
       {!q.data ? <Skeleton className="h-96" /> : (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm">

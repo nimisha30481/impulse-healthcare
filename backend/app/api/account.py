@@ -114,7 +114,7 @@ def mfa_setup(user: User = Depends(current_user), db: Session = Depends(get_db))
     user.mfa_secret = pyotp.random_base32()
     db.commit()
     return {"secret": user.mfa_secret,
-            "otpauth_uri": pyotp.TOTP(user.mfa_secret).provisioning_uri(name=user.email, issuer_name="IMPULSE")}
+            "otpauth_uri": pyotp.TOTP(user.mfa_secret).provisioning_uri(name=user.email, issuer_name="DoseWISE")}
 
 
 class CodeIn(BaseModel):

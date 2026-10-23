@@ -514,7 +514,7 @@ def send_message(patient_id: str, body: MessageIn, user: User = Depends(current_
                              summary=body.body[:2000], occurred_at=utcnow(), doctor_user_id=user.id,
                              created_by=user.id, provenance="clinician_verified"))
     notifications.notify(db, recipient, category="doctor_instruction" if user.role == "doctor" else "caregiver_update",
-                         title=f"New message from {user.full_name}", body="Open IMPULSE to read it.",
+                         title=f"New message from {user.full_name}", body="Open DoseWISE to read it.",
                          patient_id=patient_id, link="/messages")
     audit.record(db, action=f"message:{body.kind}", resource_type="message", patient_id=patient_id, user=user,
                  auth_context=acc.kind)
@@ -556,7 +556,7 @@ def request_refill(patient_id: str, body: RefillIn, user: User = Depends(current
     audit.record(db, action="refill_requested", resource_type="refill", patient_id=patient_id, user=user)
     db.commit()
     return {"id": r.id, "status": r.status,
-            "note": "Your doctor must approve refills. IMPULSE does not authorise refills automatically."}
+            "note": "Your doctor must approve refills. DoseWISE does not authorise refills automatically."}
 
 
 class ConcernIn(BaseModel):
@@ -603,7 +603,7 @@ def emergency(patient_id: str, body: EmergencyIn, user: User = Depends(current_u
         if body.alert_type == "emergency_contact" and p.emergency_contact_phone:
             from app.integrations import aws_services
 
-            res = aws_services.send_sms(p.emergency_contact_phone, f"IMPULSE emergency alert from {p.user.full_name}. "
+            res = aws_services.send_sms(p.emergency_contact_phone, f"DoseWISE emergency alert from {p.user.full_name}. "
                                                                    "Please contact them now.")
             recipients.append({"who": p.emergency_contact_name, "channel": "sms",
                                "delivery_status": {"ok": "sent"}.get(res.state, res.state)})
@@ -620,7 +620,7 @@ def emergency(patient_id: str, body: EmergencyIn, user: User = Depends(current_u
                  patient_id=patient_id, user=user, reason=body.alert_type)
     db.commit()
     return {"id": alert.id, "recipients": recipients,
-            "limitations": "IMPULSE does not dispatch emergency responders. For immediate help call 112. "
+            "limitations": "DoseWISE does not dispatch emergency responders. For immediate help call 112. "
                            "Care-team alerts are reviewed by people during support hours only."}
 
 

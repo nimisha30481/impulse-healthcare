@@ -86,7 +86,7 @@ def open_support_case(db: Session, patient_id: str, case_type: str, reason: str,
                              link=f"/support/cases/{case.id}", priority="high", dedupe_key=f"case-assign:{case.id}")
         realtime.queue(db, [assignee.id], "support_cases", patient_id, case.id)
     else:
-        aws_services.ops_alert("Unassigned IMPULSE support case", f"Case {case.id} has no on-duty coordinator")
+        aws_services.ops_alert("Unassigned DoseWISE support case", f"Case {case.id} has no on-duty coordinator")
     audit.record(db, action="support_case_created", resource_type="support_case", resource_id=case.id,
                  patient_id=patient_id, reason=case_type, source="escalation" if not created_by else "api")
     return case

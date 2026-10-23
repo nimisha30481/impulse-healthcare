@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -94,7 +94,7 @@ export function AppShell() {
 
   const sidebar = (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center px-5"><Link to="/" aria-label="IMPULSE home"><Logo size={28} /></Link></div>
+      <div className="flex h-16 items-center px-5"><Link to="/" aria-label="DoseWISE home"><Logo size={28} /></Link></div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2" aria-label="Portal">
         {nav.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.end}

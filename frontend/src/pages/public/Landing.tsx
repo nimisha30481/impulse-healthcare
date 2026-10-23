@@ -61,7 +61,7 @@ function Hero() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }}
             className="mt-8 flex flex-wrap gap-3">
             <Link to="/register"><Button size="lg" icon={<ArrowRight className="h-5 w-5" />} className="flex-row-reverse">Get Started</Button></Link>
-            <a href="#features"><Button size="lg" variant="outline">Explore IMPULSE</Button></a>
+            <a href="#features"><Button size="lg" variant="outline">Explore DoseWISE</Button></a>
           </motion.div>
           <motion.ul initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-3">
             {["Patient-controlled sharing", "Versioned prescriptions", "Every access logged"].map((t) => (
@@ -384,7 +384,7 @@ function CTA() {
       <Reveal>
         <div className="card flex flex-col items-start justify-between gap-6 bg-gradient-to-r from-primary-soft to-mint/60 p-8 sm:flex-row sm:items-center sm:p-10">
           <div>
-            <h2 className="text-2xl font-extrabold sm:text-3xl">See IMPULSE with demo data.</h2>
+            <h2 className="text-2xl font-extrabold sm:text-3xl">See DoseWISE with demo data.</h2>
             <p className="mt-1 text-ink-2">Explore the patient, doctor, caregiver and coordinator portals — no real information needed.</p>
           </div>
           <div className="flex gap-3">

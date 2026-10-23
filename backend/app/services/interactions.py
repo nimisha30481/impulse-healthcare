@@ -1,8 +1,8 @@
-﻿"""Medication safety checks.
+"""Medication safety checks.
 
 Two very different kinds of check, kept separate on purpose:
 
-1. Deterministic checks on IMPULSE's own data (always available):
+1. Deterministic checks on DoseWISE's own data (always available):
    - duplicate therapy: two active medicines share an active ingredient
    - documented allergy: a medicine's ingredient matches a recorded allergy
 2. Pairwise drug-drug interactions: ONLY from a configured, licensed clinical knowledge source.
@@ -93,7 +93,7 @@ def assess(db: Session, patient_id: str, *, new_item: PrescriptionItem | None, u
     if sfn.state == "ok":
         a.orchestrator, a.execution_ref = "step_functions", sfn.data
 
-    # --- deterministic checks on IMPULSE data ---
+    # --- deterministic checks on DoseWISE data ---
     owner: dict[str, tuple[str, str]] = {}  # ingredient -> (item_id, medicine name)
     for m in meds:
         for ing in m["ingredients"]:
@@ -103,7 +103,7 @@ def assess(db: Session, patient_id: str, *, new_item: PrescriptionItem | None, u
                     medicines=[owner[ing][1], m["name"]],
                     explanation=f"Both medicines contain {ing}.",
                     consequences="Taking both may mean taking more of the same ingredient than intended.",
-                    source="IMPULSE ingredient comparison (patient's medication list)",
+                    source="DoseWISE ingredient comparison (patient's medication list)",
                     review_guidance="Confirm whether both are intended; check total daily amount.",
                 ))
             owner.setdefault(ing, (m["item_id"], m["name"]))

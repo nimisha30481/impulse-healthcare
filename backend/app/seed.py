@@ -308,7 +308,7 @@ def seed(db):
                              data={"HbA1c": "7.4 %"} if title == "HbA1c" else {}))
     db.add(FollowUpInstruction(patient_id=pa.id, author_user_id=dr.id, kind="instruction", audience="both",
                                title="Check fasting blood sugar twice a week",
-                               description="Record readings in IMPULSE or a notebook and bring them to your next visit.",
+                               description="Record readings in DoseWISE or a notebook and bring them to your next visit.",
                                priority="normal", requires_ack=True))
     db.add(FollowUpInstruction(patient_id=pa.id, author_user_id=dr.id, kind="follow_up", audience="patient",
                                title="HbA1c review", description="Repeat HbA1c and review in clinic.",

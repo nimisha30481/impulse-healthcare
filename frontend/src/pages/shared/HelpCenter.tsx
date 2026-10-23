@@ -8,7 +8,7 @@ import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 const FAQ = [
-  ["What does 'Unconfirmed' mean?", "We sent a reminder but didn't hear back. IMPULSE doesn't assume the dose was taken or missed."],
+  ["What does 'Unconfirmed' mean?", "We sent a reminder but didn't hear back. DoseWISE doesn't assume the dose was taken or missed."],
   ["Why can't I see information about my medicine?", "We only show medicine information from reviewed, trustworthy sources. Until one is connected, ask your pharmacist or doctor."],
   ["How do I give my daughter or son access?", "Go to Care Team → Invite caregiver. They use their own account, and you approve exactly what they can see."],
   ["I missed a dose — should I take two next time?", "Not unless your doctor told you to. Check your medicine's detail page for your doctor's missed-dose guidance, or ask them."],
@@ -25,7 +25,7 @@ export default function HelpCenter() {
   return (
     <>
       <PageHeader title="Help & Support" />
-      <Notice tone="danger" title="Emergency?" icon={<Phone className="h-[18px] w-[18px]" />}>Call 112. IMPULSE support is not an emergency service.</Notice>
+      <Notice tone="danger" title="Emergency?" icon={<Phone className="h-[18px] w-[18px]" />}>Call 112. DoseWISE support is not an emergency service.</Notice>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="card p-5">
           <h2 className="font-bold">Common questions</h2>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/primitives";
 const PAGES: Record<string, { title: string; intro: string; sections: [string, ReactNode][] }> = {
   privacy: {
     title: "Privacy Policy",
-    intro: "Draft for development. Final wording requires legal review for the jurisdiction IMPULSE operates in (for an Indian launch, including the Digital Personal Data Protection framework).",
+    intro: "Draft for development. Final wording requires legal review for the jurisdiction DoseWISE operates in (for an Indian launch, including the Digital Personal Data Protection framework).",
     sections: [
       ["What we store", "Account details, medication records, appointments, documents you upload, and records your care team adds. Each record shows where it came from (clinician-verified, patient-reported, OCR-extracted, imported)."],
       ["Who can access it", "You; doctors you grant access to or book with (time-limited); caregivers you invite and authorise with specific permissions; care coordinators only for cases assigned to them. Administrators have no clinical access by role."],
@@ -19,14 +19,14 @@ const PAGES: Record<string, { title: string; intro: string; sections: [string, R
     title: "Terms of Use",
     intro: "Draft for development; requires legal review.",
     sections: [
-      ["Not emergency care", "IMPULSE does not provide emergency services or dispatch responders. Call 112 in an emergency."],
-      ["Not medical advice", "IMPULSE organises information from your care team. It does not diagnose, prescribe or recommend medication changes."],
+      ["Not emergency care", "DoseWISE does not provide emergency services or dispatch responders. Call 112 in an emergency."],
+      ["Not medical advice", "DoseWISE organises information from your care team. It does not diagnose, prescribe or recommend medication changes."],
       ["Accounts", "Keep your credentials private. Caregivers must use their own accounts, never a patient's credentials."],
     ],
   },
   security: {
     title: "Security",
-    intro: "How IMPULSE protects accounts and health information.",
+    intro: "How DoseWISE protects accounts and health information.",
     sections: [
       ["Authentication", "Argon2-hashed passwords, authenticator-app MFA with backup codes, HttpOnly session cookies, CSRF protection, lockout after repeated failures. Amazon Cognito can be enabled for hosted identity."],
       ["Authorisation", "Every patient-data request is checked on the server against active, unexpired grants. Front-end role checks are cosmetic only."],
@@ -37,7 +37,7 @@ const PAGES: Record<string, { title: string; intro: string; sections: [string, R
   },
   accessibility: {
     title: "Accessibility",
-    intro: "IMPULSE is designed for older adults and people with disabilities, with WCAG 2.2 AA as the target.",
+    intro: "DoseWISE is designed for older adults and people with disabilities, with WCAG 2.2 AA as the target.",
     sections: [
       ["Features", "Keyboard navigation, visible focus, screen-reader labels, larger text options, high-contrast mode, reduced motion, touch-friendly controls, and statuses that never rely on colour alone."],
       ["Known gaps", "Full screen-reader testing on all portals and professional review of non-English interface text are still in progress."],
@@ -56,9 +56,9 @@ const PAGES: Record<string, { title: string; intro: string; sections: [string, R
     title: "Help",
     intro: "Quick answers.",
     sections: [
-      ["Trying IMPULSE", <>Use <Link className="link" to="/login">the demo login</Link> to explore every portal with fictional data.</>],
-      ["Why does a dose say 'Unconfirmed'?", "Nobody responded to the reminder. IMPULSE doesn't assume it was taken or missed."],
-      ["Why is interaction checking 'unavailable'?", "Drug–drug checking needs a licensed clinical knowledge source. Until one is connected, IMPULSE says so rather than implying safety."],
+      ["Trying DoseWISE", <>Use <Link className="link" to="/login">the demo login</Link> to explore every portal with fictional data.</>],
+      ["Why does a dose say 'Unconfirmed'?", "Nobody responded to the reminder. DoseWISE doesn't assume it was taken or missed."],
+      ["Why is interaction checking 'unavailable'?", "Drug–drug checking needs a licensed clinical knowledge source. Until one is connected, DoseWISE says so rather than implying safety."],
     ],
   },
   "404": { title: "Page not found", intro: "The page you're looking for doesn't exist or has moved.", sections: [] },
