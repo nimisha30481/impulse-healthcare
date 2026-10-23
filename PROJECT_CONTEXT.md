@@ -102,8 +102,9 @@ safety check, caregiver dashboard and support case were exercised in the browser
 - Claude sessions can't authenticate to GitHub over HTTPS, so pushes have to be made from GitHub Desktop
   or a signed-in terminal.
 
-**Sync status:** local `main` is 2 commits ahead of `origin`. Commit `b81248d` (Hello World) and the commit
-that added this file and `CLAUDE.md` have not been pushed.
+**Sync status (2026-10-23 14:35):** `origin/main` already has `8b78958`. Local `main` is ahead by the
+IMPULSE build commits (`9afe96b`, `17cc93e`, `775a6b2`, `c7348ee` and the commit that updates this line).
+Push from GitHub Desktop; pushing from Claude fails because there's no GitHub login.
 
 ## 6. Open Items / Next Steps
 
