@@ -10,6 +10,7 @@ import { BriefView } from "@/features/briefs/BriefView";
 import { PrescriptionForm } from "@/features/prescriptions/PrescriptionForm";
 import { api, errorMessage } from "@/lib/api";
 import { fmtDate, fmtDateTime } from "@/lib/format";
+import { DateInput } from "@/components/ui/DateInput";
 
 export function PrescriptionsHub() {
   const pts = useQuery({ queryKey: ["doctor-patients", "", ""], queryFn: () => api.get("/api/doctor/patients") });
@@ -184,8 +185,8 @@ function VerifyModal({ e, onClose }: { e: any; onClose: () => void }) {
                 <Select aria-label="Unit" value={it.dose_unit} onChange={(x) => upd(i, "dose_unit", x.target.value)}>{UNITS.map((u) => <option key={u}>{u}</option>)}</Select></div>
               <Input aria-label="Frequency" value={it.frequency_label} onChange={(x) => upd(i, "frequency_label", x.target.value)} />
               <Input aria-label="Dose times (comma separated)" value={it.times_of_day.join(",")} onChange={(x) => upd(i, "times_of_day", x.target.value.split(",").map((s: string) => s.trim()).filter(Boolean))} />
-              <Input aria-label="Start date" type="date" value={it.start_date} onChange={(x) => upd(i, "start_date", x.target.value)} />
-              <Input aria-label="End date" type="date" value={it.end_date ?? ""} onChange={(x) => upd(i, "end_date", x.target.value || null)} />
+              <DateInput aria-label="Start date" value={it.start_date} onChange={(v) => upd(i, "start_date", v)} />
+              <DateInput aria-label="End date" value={it.end_date ?? ""} onChange={(v) => upd(i, "end_date", v || null)} />
             </div>
           ))}
           <Field label="Verification note" required>{(p) => <Textarea {...p} value={note} onChange={(x) => setNote(x.target.value)} placeholder="e.g. Checked against original; dose confirmed" />}</Field>

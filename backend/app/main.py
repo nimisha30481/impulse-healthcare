@@ -65,6 +65,15 @@ async def security_headers(request: Request, call_next):
     return response
 
 
+@app.exception_handler(Exception)
+async def unexpected_handler(request: Request, exc: Exception):
+    # Full traceback goes to the server log (backend/logs/server.log via scripts/dev.mjs); the
+    # browser gets a plain sentence instead of a bare "Internal Server Error".
+    log.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={
+        "detail": "Something went wrong on our side. Please try again in a moment."})
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_handler(request: Request, exc: RequestValidationError):
     errors = []

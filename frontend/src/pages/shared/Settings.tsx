@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/domain";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { LANGUAGES, useLanguage } from "@/lib/i18n";
-import { fmtDateTime, titleCase } from "@/lib/format";
+import { fmtDate, fmtDateTime, titleCase } from "@/lib/format";
 import { password as passwordRule } from "@/lib/schemas";
 import type { Preferences } from "@/lib/types";
 
@@ -211,29 +211,25 @@ function Appearance() {
   );
 }
 
-/** Date format as the operating system / browser locale writes it, e.g. "DD/MM/YYYY". */
-function systemDateFormat(): string {
-  const parts = new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "2-digit", year: "numeric" }).formatToParts(new Date(2026, 10, 23));
-  return parts.map((x) => (x.type === "day" ? "DD" : x.type === "month" ? "MM" : x.type === "year" ? "YYYY" : x.value)).join("");
-}
-
 function Region() {
   const { user } = useAuth();
   const p = user!.preferences;
   const ref = useQuery({ queryKey: ["reference"], queryFn: () => api.get("/api/reference"), staleTime: Infinity });
   const [state, setState] = useState(p.state ?? "");
+  const [touched, setTouched] = useState(false);
   const m = usePrefs();
-  const dateFormat = systemDateFormat();
+  const missing = !state;
   return (
-    <Panel title="Region" desc="DoseWISE is available in India. Dates follow your device's format.">
+    <Panel title="Region" desc="DoseWISE is available in India. Dates are shown as DD/MM/YYYY.">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Country">{(x) => <Input {...x} value="India" readOnly disabled />}</Field>
-        <Field label="State">{(x) => <Select {...x} value={state} onChange={(e) => setState(e.target.value)}>
+        <Field label="State" required error={touched && missing ? "Select your state or union territory" : undefined}>{(x) => <Select {...x} value={state} onChange={(e) => setState(e.target.value)}>
           <option value="">Select state / union territory…</option>
           {ref.data?.states.map((s: string) => <option key={s}>{s}</option>)}</Select>}</Field>
-        <Field label="Date format" hint="Taken automatically from your device settings">{(x) => <Input {...x} value={dateFormat} readOnly disabled />}</Field>
+        <Field label="Date format">{(x) => <Input {...x} value={`DD/MM/YYYY (e.g. ${fmtDate(new Date())})`} readOnly disabled />}</Field>
       </div>
-      <Button onClick={() => m.mutate({ country: "India", state, date_format: dateFormat })} loading={m.isPending}>Save region</Button>
+      <Button onClick={() => { setTouched(true); if (!missing) m.mutate({ country: "India", state, date_format: "DD/MM/YYYY" }); }}
+        disabled={touched && missing} loading={m.isPending}>Save region</Button>
     </Panel>
   );
 }

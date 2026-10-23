@@ -69,6 +69,9 @@ export default function Register() {
           <Notice tone="info">After you verify your email, DoseWISE staff will check your medical registration before you can access any clinical features.</Notice>
         )}
         <div className="mt-4"><VerifyCodeForm email={done.email} /></div>
+        <p className="mt-3 text-center text-sm text-ink-3">
+          Wrong email address? <button type="button" className="link" onClick={() => setDone(null)}>Go back and change it</button>
+        </p>
       </AuthCard>
     );
   }
@@ -120,11 +123,11 @@ export default function Register() {
           <Field label="Full name" error={errors.full_name} required>{(p) => <Input {...p} autoComplete="name" value={form.full_name} onChange={set("full_name")} />}</Field>
           <Field label="Email" error={errors.email} required>{(p) => <Input {...p} type="email" autoComplete="email" value={form.email} onChange={set("email")} />}</Field>
           <Field label="Mobile number" error={errors.phone} hint="10 digits, without +91 or 0" required>
-            {(p) => <Input {...p} type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} placeholder="9876543210"
+            {(p) => <Input {...p} type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10}
               value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })} />}
           </Field>
           <div className="hidden sm:block" />
-          <Field label="Password" error={errors.password} hint="Hover or tap (i) to see the rules" required>
+          <Field label="Password" error={errors.password} required>
             {(p) => <PasswordInput {...p} showRules autoComplete="new-password" value={form.password} onChange={set("password")} />}
           </Field>
           <Field label="Confirm password" error={errors.confirm} required>

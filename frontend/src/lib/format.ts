@@ -4,8 +4,9 @@ export function fmtTime(iso: string, tz = TZ) {
   return new Date(iso).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: tz });
 }
 
+/** DD/MM/YYYY everywhere (Indian convention), whatever the browser's language. */
 export function fmtDate(iso: string | Date, opts: Intl.DateTimeFormatOptions = {}, tz = TZ) {
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: tz, ...opts });
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: tz, ...opts });
 }
 
 export function fmtDateTime(iso: string, tz = TZ) {

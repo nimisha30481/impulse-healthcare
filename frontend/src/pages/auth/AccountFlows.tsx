@@ -50,7 +50,8 @@ export function VerifyCodeForm({ email: initialEmail = "" }: { email?: string })
           value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} />}
       </Field>
       <Button type="submit" className="w-full" loading={state === "busy"} disabled={code.length < 6 || !email}>Verify email</Button>
-      <p className="text-center text-sm text-ink-3">No email? Check spam, or <button type="button" className="link" onClick={resend} disabled={!email}>send a new code</button>.</p>
+      <p className="text-center text-sm text-ink-3">Use the code from the newest email; sending a new code cancels older ones.
+        No email? Check spam, or <button type="button" className="link" onClick={resend} disabled={!email}>send a new code</button>.</p>
     </form>
   );
 }
@@ -158,7 +159,7 @@ function ResetWithCode({ email }: { email: string }) {
         {(p) => <Input {...p} inputMode="numeric" autoComplete="one-time-code" maxLength={8} className={codeInputClass}
           value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} />}
       </Field>
-      <Field label="New password" hint="Hover or tap (i) to see the rules" required>{(p) => <PasswordInput {...p} showRules autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />}</Field>
+      <Field label="New password" required>{(p) => <PasswordInput {...p} showRules autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />}</Field>
       <Button type="submit" className="w-full" loading={busy} disabled={code.length < 6} icon={<KeyRound className="h-4 w-4" />}>Update password</Button>
       <p className="text-center text-sm"><Link className="link" to="/login">Back to sign in</Link></p>
     </form>
@@ -187,7 +188,7 @@ export function ResetPasswordPage() {
       ) : (
         <form onSubmit={submit} className="space-y-4">
           {err && <Notice tone="danger">{err}</Notice>}
-          <Field label="New password" hint="Hover or tap (i) to see the rules" required>{(p) => <PasswordInput {...p} showRules autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />}</Field>
+          <Field label="New password" required>{(p) => <PasswordInput {...p} showRules autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />}</Field>
           <Button type="submit" className="w-full" loading={busy} icon={<KeyRound className="h-4 w-4" />}>Update password</Button>
         </form>
       )}

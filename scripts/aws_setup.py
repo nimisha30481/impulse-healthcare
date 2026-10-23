@@ -10,7 +10,9 @@ Run from the repo root after signing in to AWS (`aws configure` or `aws configur
 Safe to re-run: every step reuses what already exists. No secret is printed.
 """
 import argparse
+import json
 import sys
+import time
 from pathlib import Path
 
 import boto3
@@ -172,6 +174,132 @@ def cognito(s, env, region, account):
                COGNITO_DOMAIN=f"{domain}.auth.{region}.amazoncognito.com", COGNITO_REDIRECT_URI=CALLBACK)
 
 
+# ---------------- extras (--extras): needs the wider policy in docs/aws-iam-policy.json ----------------
+def kms_and_s3(s, env, region, account):
+    kms = s.client("kms")
+    alias = f"alias/{NAME}-documents"
+    try:
+        key = kms.describe_key(KeyId=alias)["KeyMetadata"]["Arn"]
+        ok("KMS key already exists")
+    except ClientError as e:
+        if code(e) != "NotFoundException":
+            raise
+        key = kms.create_key(Description="DoseWISE private documents (S3 SSE-KMS)")["KeyMetadata"]["Arn"]
+        kms.create_alias(AliasName=alias, TargetKeyId=key)
+        kms.enable_key_rotation(KeyId=key)
+        ok("KMS key created (yearly rotation on)")
+    env["KMS_KEY_ID"] = key
+    s3 = s.client("s3")
+    bucket = f"{NAME}-documents-{account}-{region}"
+    try:
+        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": region})
+        ok(f"S3 bucket {bucket} created")
+    except ClientError as e:
+        if code(e) not in ("BucketAlreadyOwnedByYou",):
+            raise
+        ok(f"S3 bucket {bucket} already exists")
+    s3.put_public_access_block(Bucket=bucket, PublicAccessBlockConfiguration={
+        "BlockPublicAcls": True, "IgnorePublicAcls": True, "BlockPublicPolicy": True, "RestrictPublicBuckets": True})
+    s3.put_bucket_encryption(Bucket=bucket, ServerSideEncryptionConfiguration={"Rules": [{
+        "ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "aws:kms", "KMSMasterKeyID": key}, "BucketKeyEnabled": True}]})
+    s3.put_bucket_versioning(Bucket=bucket, VersioningConfiguration={"Status": "Enabled"})
+    ok("S3: public access blocked, KMS encryption and versioning on")
+    env["S3_DOCUMENTS_BUCKET"] = bucket
+
+
+def eventbridge(s, env):
+    ev = s.client("events")
+    bus = f"{NAME}-events"
+    try:
+        ev.create_event_bus(Name=bus)
+        ok(f"EventBridge bus {bus} created")
+    except ClientError as e:
+        if code(e) != "ResourceAlreadyExistsException":
+            raise
+        ok(f"EventBridge bus {bus} already exists")
+    env["EVENTBRIDGE_BUS_NAME"] = bus
+
+
+def step_functions(s, env, account):
+    iam = s.client("iam")
+    role = f"{NAME}-sfn-role"
+    try:
+        role_arn = iam.get_role(RoleName=role)["Role"]["Arn"]
+    except ClientError as e:
+        if code(e) != "NoSuchEntity":
+            raise
+        role_arn = iam.create_role(RoleName=role, AssumeRolePolicyDocument=json.dumps({
+            "Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "states.amazonaws.com"},
+                                                    "Action": "sts:AssumeRole"}]}))["Role"]["Arn"]
+        time.sleep(10)  # new roles take a moment to become usable
+    # Records each interaction assessment as an auditable workflow run. The clinical checks themselves
+    # run in the API; in a full AWS deployment (infra/) this machine also drives the Lambda follow-up.
+    definition = {"Comment": "DoseWISE interaction assessment", "StartAt": "RecordAssessment", "States": {
+        "RecordAssessment": {"Type": "Pass", "Parameters": {"assessment_id.$": "$.assessment_id",
+                                                            "patient_id.$": "$.patient_id", "status": "recorded"},
+                             "Next": "Done"},
+        "Done": {"Type": "Succeed"}}}
+    sfn = s.client("stepfunctions")
+    name = f"{NAME}-interaction-assessment"
+    arn = f"arn:aws:states:{s.region_name}:{account}:stateMachine:{name}"
+    try:
+        sfn.describe_state_machine(stateMachineArn=arn)
+        ok("Step Functions state machine already exists")
+    except ClientError as e:
+        if code(e) != "StateMachineDoesNotExist":
+            raise
+        arn = sfn.create_state_machine(name=name, roleArn=role_arn, definition=json.dumps(definition))["stateMachineArn"]
+        ok("Step Functions state machine created")
+    env["SFN_INTERACTION_STATE_MACHINE_ARN"] = arn
+
+
+def ses(s, env, email):
+    if not email:
+        warn("SES: pass --ses-email you@example.com to send DoseWISE emails from that address")
+        return
+    sv = s.client("sesv2")
+    try:
+        sv.create_email_identity(EmailIdentity=email)
+        ok(f"SES: AWS emailed a verification link to {email}. Click it, then emails start working")
+    except ClientError as e:
+        if code(e) != "AlreadyExistsException":
+            raise
+        status = sv.get_email_identity(EmailIdentity=email).get("VerificationStatus")
+        ok(f"SES identity {email} already added (status: {status})")
+    env["SES_FROM_ADDRESS"] = email
+
+
+def textract(s, env):
+    # 1x1 white PNG: proves the account can call Textract before switching it on
+    png = bytes.fromhex("89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+                        "1f15c4890000000d49444154789c63f8ffff3f0005fe02fea7d6a4"
+                        "a50000000049454e44ae426082")
+    try:
+        s.client("textract").detect_document_text(Document={"Bytes": png})
+    except ClientError as e:
+        if code(e) not in ("InvalidParameterException", "UnsupportedDocumentException", "BadDocumentException"):
+            raise
+    ok("Textract answered")
+    env["TEXTRACT_ENABLED"] = "true"
+
+
+def appsync(s, env):
+    a = s.client("appsync")
+    name = f"{NAME}-events"
+    api = next((x for x in a.list_apis().get("apis", []) if x["name"] == name), None)
+    if not api:
+        mode = [{"authType": "API_KEY"}]
+        api = a.create_api(name=name, eventConfig={"authProviders": mode, "connectionAuthModes": mode,
+                                                   "defaultPublishAuthModes": mode, "defaultSubscribeAuthModes": mode})["api"]
+        a.create_channel_namespace(apiId=api["apiId"], name="users")  # app publishes to /users/<id>
+        ok("AppSync Events API created")
+    else:
+        ok("AppSync Events API already exists")
+    key = a.create_api_key(apiId=api["apiId"], description="DoseWISE backend",
+                           expires=int(time.time()) + 360 * 86400)["apiKey"]["id"]
+    env.update(APPSYNC_EVENTS_HTTP_ENDPOINT=f"https://{api['dns']['HTTP']}", APPSYNC_EVENTS_API_KEY=key)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--region", default="ap-south-1")
@@ -179,6 +307,9 @@ def main():
     ap.add_argument("--cognito", action="store_true", help="create Cognito and switch sign-in to it")
     ap.add_argument("--verify-phone", help="Indian mobile number to verify for the SNS SMS sandbox")
     ap.add_argument("--bedrock-model", help="use this Bedrock model/inference-profile ID instead of auto-picking")
+    ap.add_argument("--extras", action="store_true",
+                    help="also set up S3+KMS, EventBridge, Step Functions, Textract, AppSync (and SES with --ses-email)")
+    ap.add_argument("--ses-email", help="email address DoseWISE sends from (AWS emails it a verification link)")
     a = ap.parse_args()
 
     try:
@@ -195,6 +326,14 @@ def main():
              ("Bedrock", lambda: bedrock(s, env, a.region, a.bedrock_model))]
     if a.cognito:
         steps.append(("Cognito", lambda: cognito(s, env, a.region, account)))
+    if a.extras or a.ses_email:
+        steps.append(("SES email", lambda: ses(s, env, a.ses_email)))
+    if a.extras:
+        steps += [("S3 + KMS", lambda: kms_and_s3(s, env, a.region, account)),
+                  ("EventBridge", lambda: eventbridge(s, env)),
+                  ("Step Functions", lambda: step_functions(s, env, account)),
+                  ("Textract", lambda: textract(s, env)),
+                  ("AppSync Events", lambda: appsync(s, env))]
     failed = []
     for name, step in steps:
         print(f"\n{name}")

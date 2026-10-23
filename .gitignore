@@ -161,3 +161,6 @@ frontend/.env.local
 dist/
 cdk.out/
 .pytest_cache/
+
+# dev server logs (scripts/dev.mjs)
+logs/

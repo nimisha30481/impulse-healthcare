@@ -66,6 +66,11 @@ class PreferencesIn(BaseModel):
 def update_preferences(body: PreferencesIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if body.language and body.language not in LANGUAGES:
         raise HTTPException(400, "Unsupported language")
+    if body.country is not None or body.state is not None:  # saving the Region section
+        from app.core.india import STATES
+
+        if body.state not in STATES:
+            raise HTTPException(400, "Select your state or union territory")
     if body.timezone:
         from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 

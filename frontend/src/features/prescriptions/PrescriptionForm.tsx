@@ -7,6 +7,7 @@ import { InteractionPanel } from "./InteractionPanel";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { medicationOrderSchema, zodErrors } from "@/lib/schemas";
 import type { Assessment, MedItem, Version } from "@/lib/types";
+import { DateInput, DateTimeInput } from "@/components/ui/DateInput";
 
 const FORMS = ["tablet", "capsule", "syrup", "suspension", "injection", "inhaler", "drops", "cream", "ointment", "patch", "powder", "solution", "spray"];
 // Units follow the Indian (metric) system; count units are for whole tablets/capsules/etc.
@@ -167,8 +168,8 @@ export function PrescriptionForm({ patientId, item, open, onClose }: { patientId
               {(p) => <Select {...p} value={presetOf(f)} onChange={(e) => applyPreset(e.target.value)}>
                 {FREQUENCIES.map((x) => <option key={x.label} value={x.label}>{x.label}{x.times?.length ? ` (${x.times.join(", ")})` : ""}</option>)}</Select>}
             </Field></div>
-            <Field label="Start date" error={errors.start_date} required>{(p) => <Input {...p} type="date" value={f.start_date} onChange={(e) => update({ start_date: e.target.value })} />}</Field>
-            <Field label="Next follow-up date" error={errors.end_date} hint="Medicine is supplied until this visit">{(p) => <Input {...p} type="date" min={f.start_date} value={f.end_date} onChange={(e) => update({ end_date: e.target.value })} />}</Field>
+            <Field label="Start date" error={errors.start_date} required>{(p) => <DateInput {...p} value={f.start_date} onChange={(v) => update({ start_date: v })} />}</Field>
+            <Field label="Next follow-up date" error={errors.end_date} hint="Medicine is supplied until this visit">{(p) => <DateInput {...p} min={f.start_date} value={f.end_date} onChange={(v) => update({ end_date: v })} />}</Field>
             <div className="sm:col-span-2"><Field label="Quantity" hint={qtyTouched ? "Edited manually" : "Calculated from dose × frequency × days until follow-up"}>
               {(p) => <Input {...p} value={f.quantity} onChange={(e) => { setQtyTouched(true); setF({ ...f, quantity: e.target.value }); }} placeholder="Set a follow-up date to calculate" />}
             </Field></div>
@@ -207,7 +208,7 @@ export function PrescriptionForm({ patientId, item, open, onClose }: { patientId
           {item && (
             <div className="grid gap-3 rounded-2xl border border-warn/30 bg-warn-soft/40 p-3 sm:grid-cols-2">
               <Field label="Reason for change" error={errors.reason} required>{(p) => <Input {...p} value={reason} onChange={(e) => setReason(e.target.value)} />}</Field>
-              <Field label="Effective from" hint="Leave empty for immediately">{(p) => <Input {...p} type="datetime-local" value={effective} onChange={(e) => setEffective(e.target.value)} />}</Field>
+              <Field label="Effective from" hint="Leave empty for immediately">{(p) => <DateTimeInput {...p} value={effective} onChange={setEffective} />}</Field>
             </div>
           )}
           {preview && <InteractionPanel a={preview} reviewable={false} />}
@@ -232,7 +233,7 @@ export function DiscontinueForm({ item, open, onClose }: { item: MedItem; open: 
     <Modal open={open} onClose={onClose} title={`Discontinue ${item.current.generic_name}`}
       footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button variant="danger" onClick={() => m.mutate()} disabled={f.reason.length < 3} loading={m.isPending}>Confirm discontinuation</Button></>}>
       <div className="space-y-4">
-        <Field label="Effective" hint="Leave empty for now. Future dates keep reminders until then.">{(p) => <Input {...p} type="datetime-local" value={f.effective_at} onChange={(e) => setF({ ...f, effective_at: e.target.value })} />}</Field>
+        <Field label="Effective" hint="Leave empty for now. Future dates keep reminders until then.">{(p) => <DateTimeInput {...p} value={f.effective_at} onChange={(v) => setF({ ...f, effective_at: v })} />}</Field>
         <Field label="Reason" required>{(p) => <Input {...p} value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} />}</Field>
         <Field label="Special instructions for the patient">{(p) => <Textarea {...p} value={f.special_instructions} onChange={(e) => setF({ ...f, special_instructions: e.target.value })} />}</Field>
         <Field label="Follow-up requirements">{(p) => <Input {...p} value={f.follow_up} onChange={(e) => setF({ ...f, follow_up: e.target.value })} />}</Field>

@@ -9,6 +9,7 @@ import { PageHeader, Tabs } from "@/components/ui/domain";
 import { api, errorMessage } from "@/lib/api";
 import { fmtDate, fmtDateTime, fmtTime, titleCase, WEEKDAYS } from "@/lib/format";
 import type { Appointment } from "@/lib/types";
+import { DateInput } from "@/components/ui/DateInput";
 
 export default function DoctorAppointments() {
   const [tab, setTab] = useState<"upcoming" | "past" | "availability">("upcoming");
@@ -92,8 +93,8 @@ function Availability() {
         <section className="card p-5">
           <h2 className="flex items-center gap-2 font-bold"><CalendarOff className="h-5 w-5 text-primary" />Leave</h2>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <Field label="From">{(p) => <Input {...p} type="date" value={leave.start_date} onChange={(e) => setLeave({ ...leave, start_date: e.target.value })} />}</Field>
-            <Field label="To">{(p) => <Input {...p} type="date" value={leave.end_date} onChange={(e) => setLeave({ ...leave, end_date: e.target.value })} />}</Field>
+            <Field label="From">{(p) => <DateInput {...p} value={leave.start_date} onChange={(v) => setLeave({ ...leave, start_date: v })} />}</Field>
+            <Field label="To">{(p) => <DateInput {...p} value={leave.end_date} onChange={(v) => setLeave({ ...leave, end_date: v })} />}</Field>
           </div>
           <Input className="mt-2" aria-label="Reason" placeholder="Reason (optional)" value={leave.reason} onChange={(e) => setLeave({ ...leave, reason: e.target.value })} />
           <Button className="mt-2" size="sm" disabled={!leave.start_date || !leave.end_date} onClick={() => addLeave.mutate()} loading={addLeave.isPending}>Add leave</Button>
@@ -101,7 +102,7 @@ function Availability() {
         </section>
         <section className="card p-5">
           <h2 className="font-bold">Slots on a day</h2>
-          <Input className="mt-2" type="date" aria-label="Day" value={day} onChange={(e) => setDay(e.target.value)} />
+          <div className="mt-2"><DateInput aria-label="Day" value={day} onChange={(v) => v && setDay(v)} /></div>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {slots.data?.map((s: any) => (
               <button key={s.id} disabled={s.booked > 0} onClick={() => block.mutate({ id: s.id, blocked: s.status !== "blocked" })}

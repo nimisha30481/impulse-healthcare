@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, Moon, Stethoscope, Sun, X } from "lucide-react";
+import { LogOut, Menu, Moon, Stethoscope, Sun, X } from "lucide-react";
 import clsx from "clsx";
 import { Logo } from "../Logo";
 import { Button } from "../ui/primitives";
@@ -34,8 +34,10 @@ export function ThemeToggle() {
 }
 
 export function PublicLayout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  // The button opens whoever is signed in on this browser, so it says who that is and offers sign-out.
+  const who = user ? (user.preferred_name || user.full_name) : "";
   const [scrolled, setScrolled] = useState(false);
   const loc = useLocation();
 
@@ -73,7 +75,10 @@ export function PublicLayout() {
             <ThemeToggle />
             <Link to="/guest"><Button variant="outline" className="whitespace-nowrap" icon={<Stethoscope className="h-4 w-4" />}>Guest Doctor Access</Button></Link>
             {user ? (
-              <Link to={homeFor(user.role)}><Button className="whitespace-nowrap">Open DoseWISE</Button></Link>
+              <>
+                <Link to={homeFor(user.role)} title={`Signed in as ${who} (${user.email})`}><Button className="max-w-[16rem] whitespace-nowrap"><span className="truncate">Continue as {who}</span></Button></Link>
+                <button onClick={() => logout()} aria-label="Sign out" title="Sign out" className="grid h-10 w-10 place-items-center rounded-xl text-ink-2 hover:bg-surface-2"><LogOut className="h-5 w-5" /></button>
+              </>
             ) : (
               <>
                 <Link to="/login" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-ink-2 hover:text-ink">Log In</Link>
@@ -97,7 +102,10 @@ export function PublicLayout() {
                 {<Link to="/guest" className="rounded-lg px-3 py-2.5 font-semibold text-primary hover:bg-surface-2">Guest Doctor Access</Link>}
                 <LanguageSelect />
                 <div className="mt-2 flex gap-2">
-                  {user ? <Link className="flex-1" to={homeFor(user.role)}><Button className="w-full">Open DoseWISE</Button></Link> : <>
+                  {user ? <>
+                    <Link className="flex-1" to={homeFor(user.role)}><Button className="w-full"><span className="truncate">Continue as {who}</span></Button></Link>
+                    <Button variant="outline" icon={<LogOut className="h-4 w-4" />} onClick={() => logout()}>Sign out</Button>
+                  </> : <>
                     <Link className="flex-1" to="/login"><Button variant="outline" className="w-full">Log In</Button></Link>
                     <Link className="flex-1" to="/register"><Button className="w-full">Get Started</Button></Link>
                   </>}

@@ -15,6 +15,7 @@ import { MessageThread } from "@/pages/shared/Messages";
 import { api, errorMessage } from "@/lib/api";
 import { fmtDate, fmtDateTime, titleCase } from "@/lib/format";
 import type { MedItem } from "@/lib/types";
+import { DateInput } from "@/components/ui/DateInput";
 
 type Tab = "summary" | "history" | "prescriptions" | "adherence" | "communication" | "brief";
 
@@ -193,11 +194,11 @@ function Communication({ patientId, patientUserId, careTeam }: { patientId: stri
           <div className="sm:col-span-2"><Field label="Title" required>{(p) => <Input {...p} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />}</Field></div>
           <div className="sm:col-span-2"><Field label="Description" required>{(p) => <Textarea {...p} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />}</Field></div>
           {open === "follow_up" ? <>
-            <Field label="Recommended by date">{(p) => <Input {...p} type="date" value={f.due_date} onChange={(e) => setF({ ...f, due_date: e.target.value })} />}</Field>
+            <Field label="Recommended by date">{(p) => <DateInput {...p} value={f.due_date} onChange={(v) => setF({ ...f, due_date: v })} />}</Field>
             <Field label="or timeframe">{(p) => <Input {...p} placeholder="e.g. in 3 months" value={f.timeframe} onChange={(e) => setF({ ...f, timeframe: e.target.value })} />}</Field>
             <Checkbox checked={f.appointment_request} onChange={(v) => setF({ ...f, appointment_request: v })} label="Ask the patient to book an appointment" description="Shown as 'recommended — not booked' until they book." />
           </> : <>
-            <Field label="Expires on">{(p) => <Input {...p} type="date" value={f.expires_on ?? ""} onChange={(e) => setF({ ...f, expires_on: e.target.value || null })} />}</Field>
+            <Field label="Expires on">{(p) => <DateInput {...p} value={f.expires_on ?? ""} onChange={(v) => setF({ ...f, expires_on: v || null })} />}</Field>
             <Checkbox checked={f.requires_ack} onChange={(v) => setF({ ...f, requires_ack: v })} label="Require acknowledgement" />
           </>}
         </div>

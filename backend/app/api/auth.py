@@ -143,6 +143,13 @@ class RegisterIn(BaseModel):
     registration_council: str | None = None
 
 
+def _resend_quietly(email: str) -> None:
+    try:
+        cognito.resend_code(email)
+    except cognito.CognitoError:
+        pass  # already confirmed or throttled: the response must look the same either way
+
+
 @router.post("/register")
 def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
     rate_limit(f"register:{client_ip(request)}", 5, 3600)
@@ -156,7 +163,10 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
                 "message": "If this email can be registered, we've emailed it a 6-digit verification code."}
                if use_cognito else
                {"status": "check_email", "message": "If this email can be registered, we've sent a verification link."})
-    if db.execute(select(User).where(User.email == email)).scalar_one_or_none():
+    existing = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    if existing:
+        if cognito.is_cognito_user(existing) and not existing.email_verified:
+            _resend_quietly(email)  # signing up again = "send me a fresh code"
         return pending  # same response as success to avoid account enumeration
     # checked before the Cognito account exists (the full doctor checks run again below)
     if use_cognito and body.role == "doctor" and (body.speciality not in SPECIALITIES
@@ -168,6 +178,7 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
             sub = cognito.sign_up(email, body.password, body.full_name.strip(), body.phone)
         except cognito.CognitoError as e:
             if e.code == "UsernameExistsException":
+                _resend_quietly(email)
                 return pending
             raise e.http()
     user = User(email=email, phone=body.phone, role=body.role, cognito_sub=sub,

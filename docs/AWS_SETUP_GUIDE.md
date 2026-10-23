@@ -6,7 +6,53 @@ already in the backend. Each one stays switched off until its settings are added
 **Fast path (about 10 minutes):** do Step 0, then run one script. It creates every resource and
 writes the settings for you. Steps 1–5 explain what it does, and how to do it by hand if you prefer.
 
+**Where to type the commands:** in a terminal opened in the project folder. In VS Code use
+**Terminal → New Terminal**, or open PowerShell and run:
+```bash
+cd C:\Users\nimis\OneDrive\Documents\GitHub\impulse-healthcare
+```
+
 ---
+
+## Update the AWS user's permissions (once, about 2 minutes)
+
+The `DoseWISE` IAM user needs the permissions in [aws-iam-policy.json](aws-iam-policy.json) for SMS
+testing and the extra services. The file is too long for an inline policy, so create a normal one:
+
+1. AWS console → **IAM → Policies → Create policy → JSON**.
+2. Delete what's there and paste the whole contents of `docs/aws-iam-policy.json`.
+3. Choose **Next**, name it `DoseWISE-app`, then **Create policy**.
+4. **IAM → Users → DoseWISE → Add permissions → Attach policies directly**. Tick `DoseWISE-app`,
+   then **Add permissions**. You can remove the older DoseWISE policy afterwards.
+
+## Turn on the remaining services (one command)
+
+```bash
+backend\.venv\Scripts\python.exe scripts\aws_setup.py --extras --ses-email you@gmail.com
+```
+
+This turns on:
+
+| Service | What it does |
+|---|---|
+| S3 + KMS | Private, encrypted document storage |
+| EventBridge | Domain events |
+| Step Functions | Records each interaction-check workflow |
+| Textract | Reads text from prescription photos |
+| AppSync Events | Real-time updates |
+| SES | DoseWISE emails, sent from your address |
+
+AWS emails a link to the SES address; click it. Until SES leaves its sandbox, emails only go to
+verified addresses.
+
+Some services stay off on purpose, and Platform status says why:
+
+| Service | Why it's off |
+|---|---|
+| HealthLake, OpenSearch, Timestream | Billed every hour they exist |
+| Comprehend Medical | Not offered in the Mumbai region |
+| API Gateway, Lambda | Only exist in a full AWS deployment (`infra/`) |
+| Drug-interaction database | Needs a licence (Bedrock AI screening covers the gap meanwhile) |
 
 ## Step 0. Sign in to AWS once (on this PC)
 
@@ -122,12 +168,23 @@ How it shows up:
 
 ## Step 4. Amazon SNS: SMS alerts
 
-1. Console → **SNS → Text messaging (SMS)**. New accounts are in the **SMS sandbox**, which can
-   only text phone numbers you verify.
-   - Add yours under **Sandbox destination phone numbers**, or use `--verify-phone`.
-2. On the same page, raise the **account spend limit**. The default is USD 1/month.
-3. Add `SNS_SMS_ENABLED=true` to `backend/.env`.
-4. Each user turns it on in **Settings → Notifications → SMS** (needs a phone number on the profile).
+New AWS accounts are in the **SMS sandbox**, which can only text phone numbers you verify. To get
+a test SMS:
+
+1. **Verify your phone.** Choose one:
+   - **Console:** **SNS → Text messaging (SMS) → Sandbox destination phone numbers → Add phone
+     number**. Enter `+91` and your 10 digits, then type the code AWS texts you.
+   - **Terminal:** run the command below (replace the number). It texts you a code and waits for
+     you to type it in. This needs the updated permissions above.
+     ```bash
+     backend\.venv\Scripts\python.exe scripts\aws_setup.py --verify-phone 9XXXXXXXXX
+     ```
+2. **Spend limit:** on the same SNS page, open **Text messaging preferences → Edit**. The account
+   limit starts at USD 1/month. Raising it above USD 1 needs a quick request in **Service quotas**
+   or **Support**.
+3. `SNS_SMS_ENABLED=true` is already in `backend/.env` (the script set it).
+4. **In DoseWISE:** add your mobile number to your profile. Then turn on **Settings →
+   Notifications → SMS** for the reminders you want.
 
 **Sending to Indian numbers (required by TRAI):** register on a DLT portal (Jio, Airtel, Vi and so on).
 1. Register an entity ID, a 6-letter sender ID (e.g. `DOSEWS`), and one transactional template.

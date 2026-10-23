@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 from botocore.exceptions import ClientError
 from conftest import PASSWORD, PHONE, Api
 
@@ -27,6 +27,9 @@ class FakeIdp:
         if kw["ConfirmationCode"] != "123456":
             self._err("CodeMismatchException")
         self.users[kw["Username"]]["confirmed"] = True
+
+    def resend_confirmation_code(self, **kw):
+        self.calls.append(("resend_confirmation_code", kw))
 
     def initiate_auth(self, **kw):
         self.calls.append(("initiate_auth", kw))
@@ -67,8 +70,9 @@ def test_cognito_signup_verify_login_and_reset(idp):
     assert r.json()["status"] == "verify_code" and "dev_link" not in r.json()
     sent = idp.calls[0][1]
     assert sent["SecretHash"] and {"Name": "phone_number", "Value": "+919876543210"} in sent["UserAttributes"]
-    # duplicate sign-up looks identical (no account enumeration)
+    # duplicate sign-up looks identical (no account enumeration) and emails a fresh code
     assert api.post("/api/auth/register", body).json()["status"] == "verify_code"
+    assert idp.calls[-1][0] == "resend_confirmation_code"
 
     assert api.post("/api/auth/login", {"email": email, "password": PASSWORD}).status_code == 403  # code not entered
     assert api.post("/api/auth/verify-email", {"email": email, "code": "000000"}).status_code == 400
@@ -81,6 +85,28 @@ def test_cognito_signup_verify_login_and_reset(idp):
     assert Api().post("/api/auth/forgot-password", {"email": email}).json()["status"] == "code_sent"
     assert Api().post("/api/auth/reset-password", {"email": email, "code": "654321", "password": "N3w_Passw0rd"}).status_code == 200
     assert Api().post("/api/auth/login", {"email": email, "password": "N3w_Passw0rd"}).status_code == 200
+
+
+def test_token_check_failure_is_a_clear_503_not_a_crash(idp, monkeypatch):
+    api, email = Api(), "token.check@example.com"
+    api.post("/api/auth/register", {"role": "patient", "full_name": "Token Check", "email": email, "password": PASSWORD,
+                                    "phone": PHONE, "accept_terms": True})
+    api.post("/api/auth/verify-email", {"email": email, "code": "123456"})
+
+    def boom(token):
+        raise RuntimeError("JWKS unreachable")
+
+    monkeypatch.setattr(cognito, "verify_id_token", boom)
+    r = api.post("/api/auth/login", {"email": email, "password": PASSWORD})
+    assert r.status_code == 503 and "temporarily unavailable" in r.json()["detail"]
+
+
+def test_region_needs_a_state():
+    from conftest import register
+
+    api, _ = register("patient")
+    assert api.patch("/api/account/preferences", {"country": "India", "state": ""}).status_code == 400
+    assert api.patch("/api/account/preferences", {"country": "India", "state": "Karnataka"}).status_code == 200
 
 
 def test_local_accounts_still_sign_in_when_cognito_is_on(idp):

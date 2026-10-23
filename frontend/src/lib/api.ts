@@ -17,6 +17,8 @@ function csrfToken(): string | undefined {
     ?.split("=")[1];
 }
 
+const SERVER_DOWN = "DoseWISE can't reach its server right now. It restarts automatically, so please try again in a few seconds.";
+
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {};
   const init: RequestInit = { method, credentials: "same-origin", headers };
@@ -30,9 +32,15 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
     headers["Content-Type"] = "application/json";
     init.body = JSON.stringify(body);
   }
-  const res = await fetch(url, init);
+  let res: Response;
+  try {
+    res = await fetch(url, init);
+  } catch {
+    throw new ApiError(0, SERVER_DOWN);
+  }
   if (!res.ok) {
-    let msg = res.statusText || "Something went wrong";
+    // A bare 5xx with no JSON body means the dev proxy couldn't reach the backend (e.g. it is restarting).
+    let msg = res.status >= 500 ? SERVER_DOWN : res.statusText || "Something went wrong";
     const fields: Record<string, string> = {};
     try {
       const data = await res.json();

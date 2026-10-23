@@ -13,6 +13,7 @@ Accounts created before Cognito was switched on (and the demo personas) keep loc
 import base64
 import hashlib
 import hmac
+import logging
 from functools import lru_cache
 
 import httpx
@@ -23,6 +24,8 @@ from fastapi import HTTPException
 from app.core.config import get_settings
 from app.core.security import verify_password
 from app.integrations import aws_services
+
+log = logging.getLogger("impulse.cognito")
 
 FRIENDLY = {
     "CodeMismatchException": "That code isn't correct. Check the latest email from DoseWISE.",
@@ -62,7 +65,9 @@ def _jwks_client(issuer: str) -> jwt.PyJWKClient:
 def verify_id_token(token: str) -> dict:
     s = get_settings()
     key = _jwks_client(_issuer()).get_signing_key_from_jwt(token)
-    claims = jwt.decode(token, key.key, algorithms=["RS256"], audience=s.cognito_client_id, issuer=_issuer())
+    # leeway: a token Cognito issued this second can look "not yet valid" to a PC clock a moment behind
+    claims = jwt.decode(token, key.key, algorithms=["RS256"], audience=s.cognito_client_id, issuer=_issuer(),
+                        leeway=120)
     if claims.get("token_use") != "id":
         raise HTTPException(401, "Unexpected token type")
     return claims
@@ -160,5 +165,17 @@ def check_password(user, password: str) -> bool:
     except CognitoError as e:
         if e.code == "UserNotConfirmedException":
             raise
-        return False
-    return verify_id_token(tokens["IdToken"]).get("sub") == user.cognito_sub
+        if e.code in ("NotAuthorizedException", "UserNotFoundException", "PasswordResetRequiredException"):
+            return False
+        log.warning("Cognito sign-in failed: %s", e)
+        raise HTTPException(503, "Sign-in is temporarily unavailable. Please try again in a moment.") from e
+    except Exception as e:  # network trouble reaching AWS
+        log.exception("Cognito sign-in error")
+        raise HTTPException(503, "Sign-in is temporarily unavailable. Please try again in a moment.") from e
+    try:
+        return verify_id_token(tokens["IdToken"]).get("sub") == user.cognito_sub
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001 - key fetch or token check problem
+        log.exception("Cognito ID token check failed")
+        raise HTTPException(503, "Sign-in is temporarily unavailable. Please try again in a moment.") from e

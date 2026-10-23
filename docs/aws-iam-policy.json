@@ -10,7 +10,11 @@
     {
       "Sid": "SNS",
       "Effect": "Allow",
-      "Action": ["sns:CreateTopic", "sns:Publish", "sns:CreateSMSSandboxPhoneNumber", "sns:VerifySMSSandboxPhoneNumber"],
+      "Action": [
+        "sns:CreateTopic", "sns:Publish", "sns:GetSMSAttributes", "sns:SetSMSAttributes",
+        "sns:GetSMSSandboxAccountStatus", "sns:ListSMSSandboxPhoneNumbers",
+        "sns:CreateSMSSandboxPhoneNumber", "sns:VerifySMSSandboxPhoneNumber", "sns:DeleteSMSSandboxPhoneNumber"
+      ],
       "Resource": "*"
     },
     {
@@ -33,6 +37,60 @@
         "cognito-idp:SetUserPoolMfaConfig", "cognito-idp:ListUserPoolClients", "cognito-idp:CreateUserPoolClient",
         "cognito-idp:DescribeUserPoolClient", "cognito-idp:CreateUserPoolDomain"
       ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DocumentsKms",
+      "Effect": "Allow",
+      "Action": [
+        "kms:CreateKey", "kms:CreateAlias", "kms:DescribeKey", "kms:EnableKeyRotation", "kms:ListAliases",
+        "kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DocumentsS3",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket", "s3:PutBucketPublicAccessBlock", "s3:PutEncryptionConfiguration", "s3:PutBucketVersioning",
+        "s3:PutObject", "s3:GetObject"
+      ],
+      "Resource": ["arn:aws:s3:::dosewise-documents-*", "arn:aws:s3:::dosewise-documents-*/*"]
+    },
+    {
+      "Sid": "EventBridge",
+      "Effect": "Allow",
+      "Action": ["events:CreateEventBus", "events:DescribeEventBus", "events:PutEvents"],
+      "Resource": "arn:aws:events:ap-south-1:*:event-bus/dosewise-*"
+    },
+    {
+      "Sid": "StepFunctions",
+      "Effect": "Allow",
+      "Action": ["states:CreateStateMachine", "states:DescribeStateMachine", "states:StartExecution"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "StepFunctionsRole",
+      "Effect": "Allow",
+      "Action": ["iam:CreateRole", "iam:GetRole", "iam:PassRole"],
+      "Resource": "arn:aws:iam::*:role/dosewise-sfn-role"
+    },
+    {
+      "Sid": "SesEmail",
+      "Effect": "Allow",
+      "Action": ["ses:CreateEmailIdentity", "ses:GetEmailIdentity", "ses:SendEmail"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Textract",
+      "Effect": "Allow",
+      "Action": ["textract:DetectDocumentText"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AppSyncEvents",
+      "Effect": "Allow",
+      "Action": ["appsync:ListApis", "appsync:CreateApi", "appsync:CreateChannelNamespace", "appsync:CreateApiKey"],
       "Resource": "*"
     },
     {
