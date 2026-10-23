@@ -17,7 +17,7 @@ All demo data is **fictional**. DoseWISE makes **no regulatory compliance claims
 | Frontend | React 18 + TypeScript (Vite), Tailwind CSS, Framer Motion, Lucide, Recharts, Zod, TanStack Query |
 | Backend | Python 3.11, FastAPI, SQLAlchemy 2, Alembic, Pydantic v2 |
 | Database | PostgreSQL in AWS (RDS); SQLite for zero-setup local development |
-| Cloud | AWS — Cognito, API Gateway, Lambda, DynamoDB, S3, KMS, CloudTrail, EventBridge, Step Functions, SNS, SES, End User Messaging, HealthLake, AppSync, Textract, Comprehend Medical, Bedrock, Timestream for InfluxDB, OpenSearch, Location Service, IAM Identity Center (see [docs/AWS_ARCHITECTURE.md](docs/AWS_ARCHITECTURE.md)) |
+| Cloud | AWS — Cognito, API Gateway, Lambda, DynamoDB, S3, KMS, CloudTrail, EventBridge, Step Functions, SNS, SES, End User Messaging, HealthLake, AppSync, Comprehend Medical, Bedrock, Timestream for InfluxDB, OpenSearch, Location Service, IAM Identity Center (see [docs/AWS_ARCHITECTURE.md](docs/AWS_ARCHITECTURE.md)) |
 | IaC | AWS CDK v2 (Python) in [`infra/`](infra/) |
 
 ## Quick start (local, ~5 minutes)

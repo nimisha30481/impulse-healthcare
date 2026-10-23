@@ -9,7 +9,6 @@ from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.integrations import aws_services
 from app.models import OCRExtraction, PrescriptionItem, UploadedDocument
 from app.models.base import utcnow
 
@@ -44,22 +43,10 @@ def extract(db: Session, doc: UploadedDocument, data: bytes) -> OCRExtraction:
     quality = quality_check(data, doc.mime_type)
     ext = OCRExtraction(document_id=doc.id, patient_id=doc.patient_id, quality=quality, engine="manual",
                         extracted={"medications": []}, uncertain_fields=[], history=[])
-    text_res = aws_services.textract_text(data) if quality.get("readable", True) else aws_services.Result("failed")
-    if text_res.state == "ok":
-        ext.raw_text = text_res.data
-        ext.engine = "textract"
-        ext.confidence = text_res.meta.get("confidence")
-        meds_res = aws_services.comprehend_medications(text_res.data)
-        if meds_res.state == "ok":
-            ext.engine = "textract+comprehend_medical"
-            ext.extracted = {"medications": meds_res.data}
-            ext.uncertain_fields = [
-                f"medications[{i}].{k}" for i, m in enumerate(meds_res.data) for k in MED_FIELDS
-                if m.get(f"{k}_confidence", m.get("confidence", 0)) < 0.8 or k not in m
-            ]
-    else:
-        ext.history.append({"at": utcnow().isoformat(), "event": "ocr_unavailable",
-                            "detail": "Automatic reading is not configured. Please type the prescription details."})
+    # The patient types the prescription details; a doctor compares them with the upload before
+    # anything becomes a verified medicine.
+    ext.history.append({"at": utcnow().isoformat(), "event": "manual_transcription",
+                        "detail": "Please type the prescription details from the uploaded document."})
     ext.history = [*ext.history, {"at": utcnow().isoformat(), "event": "extracted", "engine": ext.engine}]
     ext.possible_duplicates = find_duplicates(db, doc)
     db.add(ext)

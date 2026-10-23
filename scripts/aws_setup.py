@@ -276,20 +276,6 @@ def ses(s, env, email):
     env["SES_FROM_ADDRESS"] = email
 
 
-def textract(s, env):
-    # 1x1 white PNG: proves the account can call Textract before switching it on
-    png = bytes.fromhex("89504e470d0a1a0a0000000d4948445200000001000000010806000000"
-                        "1f15c4890000000d49444154789c63f8ffff3f0005fe02fea7d6a4"
-                        "a50000000049454e44ae426082")
-    try:
-        s.client("textract").detect_document_text(Document={"Bytes": png})
-    except ClientError as e:
-        if code(e) not in ("InvalidParameterException", "UnsupportedDocumentException", "BadDocumentException"):
-            raise
-    ok("Textract answered")
-    env["TEXTRACT_ENABLED"] = "true"
-
-
 def appsync(s, env):
     saved = current_env()
     if saved.get("APPSYNC_EVENTS_HTTP_ENDPOINT") and saved.get("APPSYNC_EVENTS_API_KEY"):
@@ -322,7 +308,7 @@ def main():
     ap.add_argument("--verify-phone", help="Indian mobile number to verify for the SNS SMS sandbox")
     ap.add_argument("--bedrock-model", help="use this Bedrock model/inference-profile ID instead of auto-picking")
     ap.add_argument("--extras", action="store_true",
-                    help="also set up S3+KMS, EventBridge, Step Functions, Textract, AppSync (and SES with --ses-email)")
+                    help="also set up S3+KMS, EventBridge, Step Functions, AppSync (and SES with --ses-email)")
     ap.add_argument("--ses-email", help="email address DoseWISE sends from (AWS emails it a verification link)")
     a = ap.parse_args()
 
@@ -346,7 +332,6 @@ def main():
         steps += [("S3 + KMS", lambda: kms_and_s3(s, env, a.region, account)),
                   ("EventBridge", lambda: eventbridge(s, env)),
                   ("Step Functions", lambda: step_functions(s, env, account)),
-                  ("Textract", lambda: textract(s, env)),
                   ("AppSync Events", lambda: appsync(s, env))]
     failed = []
     for name, step in steps:

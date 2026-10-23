@@ -4,38 +4,65 @@
     {
       "Sid": "DynamoDB",
       "Effect": "Allow",
-      "Action": ["dynamodb:CreateTable", "dynamodb:DescribeTable", "dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query"],
+      "Action": [
+        "dynamodb:CreateTable",
+        "dynamodb:DescribeTable",
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query"
+      ],
       "Resource": "arn:aws:dynamodb:ap-south-1:*:table/dosewise-*"
     },
     {
       "Sid": "SNS",
       "Effect": "Allow",
       "Action": [
-        "sns:CreateTopic", "sns:Publish", "sns:GetSMSAttributes", "sns:SetSMSAttributes",
-        "sns:GetSMSSandboxAccountStatus", "sns:ListSMSSandboxPhoneNumbers",
-        "sns:CreateSMSSandboxPhoneNumber", "sns:VerifySMSSandboxPhoneNumber", "sns:DeleteSMSSandboxPhoneNumber"
+        "sns:CreateTopic",
+        "sns:Publish",
+        "sns:GetSMSAttributes",
+        "sns:SetSMSAttributes",
+        "sns:GetSMSSandboxAccountStatus",
+        "sns:ListSMSSandboxPhoneNumbers",
+        "sns:CreateSMSSandboxPhoneNumber",
+        "sns:VerifySMSSandboxPhoneNumber",
+        "sns:DeleteSMSSandboxPhoneNumber"
       ],
       "Resource": "*"
     },
     {
       "Sid": "Location",
       "Effect": "Allow",
-      "Action": ["geo:CreatePlaceIndex", "geo:DescribePlaceIndex", "geo:SearchPlaceIndexForText", "geo:SearchPlaceIndexForPosition"],
+      "Action": [
+        "geo:CreatePlaceIndex",
+        "geo:DescribePlaceIndex",
+        "geo:SearchPlaceIndexForText",
+        "geo:SearchPlaceIndexForPosition"
+      ],
       "Resource": "arn:aws:geo:ap-south-1:*:place-index/dosewise-*"
     },
     {
       "Sid": "Bedrock",
       "Effect": "Allow",
-      "Action": ["bedrock:ListFoundationModels", "bedrock:ListInferenceProfiles", "bedrock:InvokeModel", "bedrock:GetInferenceProfile"],
+      "Action": [
+        "bedrock:ListFoundationModels",
+        "bedrock:ListInferenceProfiles",
+        "bedrock:InvokeModel",
+        "bedrock:GetInferenceProfile"
+      ],
       "Resource": "*"
     },
     {
       "Sid": "Cognito",
       "Effect": "Allow",
       "Action": [
-        "cognito-idp:ListUserPools", "cognito-idp:CreateUserPool", "cognito-idp:DescribeUserPool",
-        "cognito-idp:SetUserPoolMfaConfig", "cognito-idp:ListUserPoolClients", "cognito-idp:CreateUserPoolClient",
-        "cognito-idp:DescribeUserPoolClient", "cognito-idp:CreateUserPoolDomain"
+        "cognito-idp:ListUserPools",
+        "cognito-idp:CreateUserPool",
+        "cognito-idp:DescribeUserPool",
+        "cognito-idp:SetUserPoolMfaConfig",
+        "cognito-idp:ListUserPoolClients",
+        "cognito-idp:CreateUserPoolClient",
+        "cognito-idp:DescribeUserPoolClient",
+        "cognito-idp:CreateUserPoolDomain"
       ],
       "Resource": "*"
     },
@@ -43,8 +70,14 @@
       "Sid": "DocumentsKms",
       "Effect": "Allow",
       "Action": [
-        "kms:CreateKey", "kms:CreateAlias", "kms:DescribeKey", "kms:EnableKeyRotation", "kms:ListAliases",
-        "kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"
+        "kms:CreateKey",
+        "kms:CreateAlias",
+        "kms:DescribeKey",
+        "kms:EnableKeyRotation",
+        "kms:ListAliases",
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:GenerateDataKey"
       ],
       "Resource": "*"
     },
@@ -52,45 +85,68 @@
       "Sid": "DocumentsS3",
       "Effect": "Allow",
       "Action": [
-        "s3:CreateBucket", "s3:PutBucketPublicAccessBlock", "s3:PutEncryptionConfiguration", "s3:PutBucketVersioning",
-        "s3:PutObject", "s3:GetObject"
+        "s3:CreateBucket",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:PutEncryptionConfiguration",
+        "s3:PutBucketVersioning",
+        "s3:PutObject",
+        "s3:GetObject"
       ],
-      "Resource": ["arn:aws:s3:::dosewise-documents-*", "arn:aws:s3:::dosewise-documents-*/*"]
+      "Resource": [
+        "arn:aws:s3:::dosewise-documents-*",
+        "arn:aws:s3:::dosewise-documents-*/*"
+      ]
     },
     {
       "Sid": "EventBridge",
       "Effect": "Allow",
-      "Action": ["events:CreateEventBus", "events:DescribeEventBus", "events:PutEvents"],
+      "Action": [
+        "events:CreateEventBus",
+        "events:DescribeEventBus",
+        "events:PutEvents"
+      ],
       "Resource": "arn:aws:events:ap-south-1:*:event-bus/dosewise-*"
     },
     {
       "Sid": "StepFunctions",
       "Effect": "Allow",
-      "Action": ["states:CreateStateMachine", "states:DescribeStateMachine", "states:StartExecution"],
+      "Action": [
+        "states:CreateStateMachine",
+        "states:DescribeStateMachine",
+        "states:StartExecution"
+      ],
       "Resource": "*"
     },
     {
       "Sid": "StepFunctionsRole",
       "Effect": "Allow",
-      "Action": ["iam:CreateRole", "iam:GetRole", "iam:PassRole"],
+      "Action": [
+        "iam:CreateRole",
+        "iam:GetRole",
+        "iam:PassRole"
+      ],
       "Resource": "arn:aws:iam::*:role/dosewise-sfn-role"
     },
     {
       "Sid": "SesEmail",
       "Effect": "Allow",
-      "Action": ["ses:CreateEmailIdentity", "ses:GetEmailIdentity", "ses:SendEmail"],
-      "Resource": "*"
-    },
-    {
-      "Sid": "Textract",
-      "Effect": "Allow",
-      "Action": ["textract:DetectDocumentText"],
+      "Action": [
+        "ses:CreateEmailIdentity",
+        "ses:GetEmailIdentity",
+        "ses:SendEmail"
+      ],
       "Resource": "*"
     },
     {
       "Sid": "AppSyncEvents",
       "Effect": "Allow",
-      "Action": ["appsync:ListApis", "appsync:GetApi", "appsync:CreateApi", "appsync:CreateChannelNamespace", "appsync:CreateApiKey"],
+      "Action": [
+        "appsync:ListApis",
+        "appsync:GetApi",
+        "appsync:CreateApi",
+        "appsync:CreateChannelNamespace",
+        "appsync:CreateApiKey"
+      ],
       "Resource": "*"
     },
     {

@@ -34,7 +34,7 @@ export function OcrReview({ patientId, extractionId, onClose }: { patientId: str
       {!e ? <Skeleton className="h-64" /> : (
         <div className="space-y-4">
           <Notice tone="warn" title="Unverified">{e.label}</Notice>
-          {e.engine === "manual" && <Notice tone="info">Automatic reading (OCR) isn't configured, so please type what the prescription says. A doctor will compare it with your upload.</Notice>}
+          {e.engine === "manual" && <Notice tone="info">Please type what the prescription says. A doctor will compare it with your upload.</Notice>}
           {e.quality?.warnings?.length > 0 && <Notice tone="warn" title="Image quality">{e.quality.warnings.join(" ")}</Notice>}
           {e.possible_duplicates?.length > 0 && (
             <Notice tone="warn" title="Possible duplicates">{e.possible_duplicates.map((d: any) => d.kind === "already_active" ? `${d.name} is already an active medicine.` : `This file was uploaded before (${d.title}).`).join(" ")}</Notice>

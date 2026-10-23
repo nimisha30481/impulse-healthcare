@@ -61,7 +61,6 @@ class Settings(BaseSettings):
     healthlake_datastore_endpoint: str = ""
     healthlake_region: str = ""
     comprehend_medical_region: str = ""
-    textract_enabled: bool = False
     bedrock_model_id: str = ""
     bedrock_region: str = ""
     appsync_events_http_endpoint: str = ""

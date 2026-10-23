@@ -66,7 +66,7 @@ caregiver notification *only if the patient approved it* → coordinator case (l
 conditional `UPDATE … WHERE booked_count < capacity` (atomic on PostgreSQL and SQLite); holds expire
 after 5 minutes. Tested with concurrent requests.
 
-**OCR.** Upload → magic-byte/size validation → image quality check → Textract (if configured) →
+**OCR.** Upload → magic-byte/size validation → image quality check → patient types the details →
 Comprehend Medical (if configured) → patient review/transcription → doctor verification → structured
 prescription → schedule. Unverified data never creates reminders.
 

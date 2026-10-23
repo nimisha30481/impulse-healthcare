@@ -38,7 +38,6 @@ This turns on:
 | S3 + KMS | Private, encrypted document storage |
 | EventBridge | Domain events |
 | Step Functions | Records each interaction-check workflow |
-| Textract | Reads text from prescription photos |
 | AppSync Events | Real-time updates |
 | SES | DoseWISE emails, sent from your address |
 

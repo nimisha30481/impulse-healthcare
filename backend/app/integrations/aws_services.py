@@ -170,21 +170,7 @@ def appsync_publish(channel: str, event: dict) -> Result:
         return Result("failed", error=str(e)[:300])
 
 
-# ---------------- Textract + Comprehend Medical ----------------
-def textract_text(data: bytes) -> Result:
-    s = get_settings()
-    if not s.textract_enabled:
-        return Result("not_configured")
-    try:
-        resp = client("textract").detect_document_text(Document={"Bytes": data})
-        lines = [b for b in resp["Blocks"] if b["BlockType"] == "LINE"]
-        text = "\n".join(b["Text"] for b in lines)
-        conf = sum(b.get("Confidence", 0) for b in lines) / max(len(lines), 1) / 100
-        return Result("ok", data=text, meta={"confidence": round(conf, 3)})
-    except Exception as e:  # noqa: BLE001
-        return Result("failed", error=str(e)[:300])
-
-
+# ---------------- Comprehend Medical ----------------
 def comprehend_medications(text: str) -> Result:
     """Returns medication mentions with attributes. Mentions are NOT prescriptions."""
     s = get_settings()

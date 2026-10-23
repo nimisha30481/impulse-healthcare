@@ -122,7 +122,7 @@ class OCRExtraction(IdMixin, TimestampMixin, Base):
 
     document_id: Mapped[str] = mapped_column(ForeignKey("uploaded_documents.id", ondelete="CASCADE"), index=True)
     patient_id: Mapped[str] = mapped_column(ForeignKey("patient_profiles.id", ondelete="CASCADE"), index=True)
-    engine: Mapped[str] = mapped_column(String(40))  # textract+comprehend_medical | manual | demo
+    engine: Mapped[str] = mapped_column(String(40))  # manual | demo
     quality: Mapped[dict] = mapped_column(JSON, default=dict)  # width, height, warnings
     raw_text: Mapped[str | None] = mapped_column(Text)
     extracted: Mapped[dict] = mapped_column(JSON, default=dict)  # header fields + medications list

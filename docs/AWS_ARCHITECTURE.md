@@ -21,7 +21,7 @@ flowchart TB
   SFN --> L3[Lambda: workflow]
   SCHED[EventBridge rule · 1 min] --> L2[Lambda: reminder/escalation tick]
   L1 & L2 --> SES[SES email] & EUM[End User Messaging SMS] & SNS[SNS ops alerts]
-  L1 --> TX[Textract] --> CM[Comprehend Medical]
+  L1 --> CM[Comprehend Medical]
   L1 --> BR[Bedrock — summaries only]
   L1 --> HL[(HealthLake FHIR R4 replica)]
   L1 --> APS[AppSync Events — real-time hints]
@@ -51,7 +51,6 @@ flowchart TB
 | 13 | Amazon Pinpoint | **Not used — see §4**; replaced by SES + End User Messaging | — | — | — | 2 |
 | 14 | Amazon SES | Email notifications (generic text only) | `send_email` | email identity | `not_configured` | 2 |
 | 15 | AWS End User Messaging SMS | SMS notifications (generic text only) | `send_sms` | phone pool set up manually | `not_configured` | 2 |
-| 16 | Amazon Textract | OCR of prescription images/PDFs (**addition**: Comprehend Medical cannot read images) | `textract_text` | IAM only | patient transcribes | 3 |
 | 17 | Comprehend Medical | Medication entity extraction from OCR text; output is unverified | `comprehend_medications` | IAM only | none | 3 |
 | 18 | Amazon Bedrock | Plain-language narrative for clinical briefs; never findings | `bedrock_summarize` (citation validation) | IAM only | deterministic brief only | 3 |
 | 19 | Drug interaction source | Licensed knowledge source (HTTP adapter contract in `services/interactions.py`) | `query_knowledge_source` | — | **"unavailable" shown** | 3 |
@@ -79,7 +78,6 @@ Live status per environment: **Settings → Platform status** (`GET /api/integra
 |---|---|---|---|
 | Amazon Pinpoint | Closed to new customers 20 May 2025; **end of support 30 Oct 2026** | SES (email) + AWS End User Messaging (SMS/push), behind `services/notifications.py` | [AWS docs](https://docs.aws.amazon.com/pinpoint/latest/userguide/migrate.html) |
 | Timestream for LiveAnalytics | Closed to new customers 20 Jun 2025 | Timestream for InfluxDB (AWS-recommended), analytics only | [AWS docs](https://docs.aws.amazon.com/timestream/latest/developerguide/AmazonTimestreamForLiveAnalytics-availability-change.html) |
-| (added) Amazon Textract | — | Needed for OCR; Comprehend Medical only accepts text | — |
 
 ## 5. Deployment
 
@@ -116,7 +114,7 @@ Teardown (dev): `cdk destroy -c env=dev` (dev buckets auto-empty; prod resources
 | CloudWatch logs/alarms | 1-month retention | 3–8 |
 | Optional: OpenSearch Serverless | minimum OCUs | **~175+** |
 | Optional: HealthLake data store | per hour + storage | **~200+** |
-| Optional: Textract / Comprehend Medical / Bedrock | per page / per character / per token | usage-based |
+| Optional: Comprehend Medical / Bedrock | per character / per token | usage-based |
 
 Not every service has a free tier. Budget alert at 80 % of `budgetUsd` (default 150). Destroy idle
 optional resources; prefer `cdk destroy` for unused dev stacks.
@@ -137,7 +135,7 @@ cases) are listed in [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 
 Cognito (pool, client id/secret, domain) · S3 bucket · KMS key · DynamoDB tables · EventBridge bus ·
 Step Functions ARN · SNS topic · SES verified sender · End User Messaging origination identity ·
-HealthLake endpoint · AppSync Events endpoint + key · Textract (IAM) · Comprehend Medical region ·
+HealthLake endpoint · AppSync Events endpoint + key · Comprehend Medical region ·
 Bedrock model id · Timestream for InfluxDB URL + token · OpenSearch endpoint · Location place index ·
 **licensed drug-interaction provider** · RDS secret. All are listed in `backend/.env.example`.
 
