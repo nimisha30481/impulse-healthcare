@@ -364,10 +364,22 @@ def main():
             failed.append(name)
 
     write_env(env)
-    print(f"\nWrote {len(env)} settings to backend/.env. Restart the backend to load them "
-          "(the DoseWISE supervisor restarts it automatically if you stop it).")
+    print(f"\nWrote {len(env)} settings to backend/.env.")
+    restart_backend()
     if failed:
-        sys.exit(f"Not set up: {', '.join(failed)}. Fix the error above (usually a missing IAM permission) and re-run.")
+        sys.exit(f"Not set up: {', '.join(failed)}. See the reason above, then re-run this command.")
+
+
+def restart_backend():
+    """Stops the backend on :8000; the DoseWISE supervisor starts it again with the new settings."""
+    import subprocess
+
+    bat = ROOT / "restart-backend.bat"
+    if sys.platform == "win32" and bat.exists():
+        subprocess.run(["cmd", "/c", str(bat)], check=False, capture_output=True)
+        print("Restarted the backend: it's back with the new settings in about 10 seconds.")
+    else:
+        print("Restart the backend to load them.")
 
 
 if __name__ == "__main__":
