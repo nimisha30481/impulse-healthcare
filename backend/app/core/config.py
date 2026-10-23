@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # SQLite keeps local setup to zero dependencies. Use PostgreSQL everywhere else:
     # postgresql+psycopg://user:pass@host:5432/impulse
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'impulse_dev.db').as_posix()}"
+    database_secret_arn: str = ""  # AWS: build database_url from the RDS-generated secret
     secret_key: str = "dev-only-change-me"  # used for CSRF/HMAC; must be set outside development
     frontend_origin: str = "http://localhost:5173"
     session_hours: int = 12
@@ -84,9 +85,22 @@ class Settings(BaseSettings):
         return self.is_dev and self.enable_demo_login
 
 
+def _database_url_from_secret(arn: str, region: str) -> str:
+    """In AWS the RDS credentials live in Secrets Manager (rotatable), never in env vars."""
+    import json
+
+    import boto3
+
+    sec = json.loads(boto3.client("secretsmanager", region_name=region).get_secret_value(SecretId=arn)["SecretString"])
+    return (f"postgresql+psycopg://{sec['username']}:{sec['password']}@{sec['host']}:{sec.get('port', 5432)}"
+            f"/{sec.get('dbname', 'impulse')}?sslmode=require")
+
+
 @lru_cache
 def get_settings() -> Settings:
     s = Settings()
+    if s.database_secret_arn:
+        s.database_url = _database_url_from_secret(s.database_secret_arn, s.aws_region)
     if not s.is_dev and s.secret_key == "dev-only-change-me":
         raise RuntimeError("SECRET_KEY must be set outside development")
     return s

@@ -1,0 +1,9 @@
+{
+  "app": "python app.py",
+  "context": {
+    "env": "dev",
+    "region": "ap-south-1",
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "@aws-cdk/core:target-partitions": ["aws"]
+  }
+}
