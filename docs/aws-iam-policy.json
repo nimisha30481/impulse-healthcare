@@ -1,0 +1,45 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DynamoDB",
+      "Effect": "Allow",
+      "Action": ["dynamodb:CreateTable", "dynamodb:DescribeTable", "dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query"],
+      "Resource": "arn:aws:dynamodb:ap-south-1:*:table/dosewise-*"
+    },
+    {
+      "Sid": "SNS",
+      "Effect": "Allow",
+      "Action": ["sns:CreateTopic", "sns:Publish", "sns:CreateSMSSandboxPhoneNumber", "sns:VerifySMSSandboxPhoneNumber"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Location",
+      "Effect": "Allow",
+      "Action": ["geo:CreatePlaceIndex", "geo:DescribePlaceIndex", "geo:SearchPlaceIndexForText", "geo:SearchPlaceIndexForPosition"],
+      "Resource": "arn:aws:geo:ap-south-1:*:place-index/dosewise-*"
+    },
+    {
+      "Sid": "Bedrock",
+      "Effect": "Allow",
+      "Action": ["bedrock:ListFoundationModels", "bedrock:ListInferenceProfiles", "bedrock:InvokeModel", "bedrock:GetInferenceProfile"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Cognito",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:ListUserPools", "cognito-idp:CreateUserPool", "cognito-idp:DescribeUserPool",
+        "cognito-idp:SetUserPoolMfaConfig", "cognito-idp:ListUserPoolClients", "cognito-idp:CreateUserPoolClient",
+        "cognito-idp:DescribeUserPoolClient", "cognito-idp:CreateUserPoolDomain"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Identity",
+      "Effect": "Allow",
+      "Action": "sts:GetCallerIdentity",
+      "Resource": "*"
+    }
+  ]
+}

@@ -12,10 +12,11 @@ from app.models import Notification, User
 from app.services import realtime
 
 # Insecure channels get a generic message; details are only visible after signing in.
+# All texts fit one TRAI DLT template: "DoseWISE: you have a new {#var#}. Open the app to view it."
 GENERIC_TEXT = {
-    "medication_reminder": "DoseWISE: you have a medication reminder. Open the app to view it.",
-    "appointment_reminder": "DoseWISE: you have an upcoming appointment. Open the app for details.",
-    "default": "DoseWISE: you have a new update. Sign in to view it.",
+    "medication_reminder": "DoseWISE: you have a new medication reminder. Open the app to view it.",
+    "appointment_reminder": "DoseWISE: you have a new appointment reminder. Open the app to view it.",
+    "default": "DoseWISE: you have a new update. Open the app to view it.",
 }
 
 PREF_KEYS = {

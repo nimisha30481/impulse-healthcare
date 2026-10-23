@@ -94,7 +94,7 @@ and automated dose alerts go out on several channels. Together these aim to:
 | `index.html` | Original "Hello World" page from prompt 2 (kept; not used by the app). |
 | `PROJECT_CONTEXT.md` / `CLAUDE.md` | This living record / standing instructions. |
 
-**How to run:** see README (seed â†’ uvicorn :8000 â†’ `npm run dev` :5173 â†’ demo login).
+**How to run:** see README (seed → uvicorn :8000 → `npm run dev` :5173 → demo login).
 **Verified locally:** 26 backend + 8 frontend tests pass; typecheck and production build pass; landing,
 patient dashboard, medicine detail, doctor dashboard, OCR verification, clinical brief, prescription
 safety check, caregiver dashboard and support case were exercised in the browser.
@@ -119,6 +119,7 @@ recorded push 11:05). Check on github.com that `main` shows commit `c47b822` or 
 - [ ] Push pending commits to `origin/main` (needs GitHub sign-in via GitHub Desktop).
 - [x] Choose the stack and build the application (React / FastAPI / SQL / AWS).
 - [x] Expand `README.md`. (`index.html` kept as-is; delete it if no longer wanted.)
+- [ ] Owner: sign in to AWS (`aws configure`) and run `scripts/aws_setup.py` to link DynamoDB, SNS, Location, Bedrock (+ `--cognito`); India SMS needs TRAI DLT IDs. See docs/AWS_SETUP_GUIDE.md.
 - [ ] Deploy `infra/` to a dev AWS account and run the 20 live AWS integration tests (docs/PRODUCTION_READINESS.md).
 - [ ] Contract a licensed drug-interaction knowledge source and a reviewed medicine-education source.
 - [ ] Add the AppSync Events API and Timestream for InfluxDB to the CDK stack; write the OpenSearch indexing job.
@@ -148,3 +149,4 @@ recorded push 11:05). Check on github.com that `main` shows commit `c47b822` or 
 | 16 | 2026-10-23 21:43 | Owner said they pushed from GitHub Desktop; asked to confirm and update this file | **Not all pushed.** The last push this checkout recorded was at 19:03 (`08d00b7`). These 3 commits are still not on `origin/main`: `fb0e67a` (dev-server supervisor), `0cf4643` (backend for prompt 2), `78f7cd5` (frontend for prompt 2), plus the commit that adds this row. (`git fetch` can't run here without a GitHub login, so this is based on the local record of the remote.) |
 | 17 | 2026-10-23 21:44 | Owner pushed again from GitHub Desktop; asked to re-check | **Confirmed:** pushed at 21:43; `origin/main` = `8196b91`, matching local `main`. Everything through prompt 2 is on GitHub. Only this row (and its commit) is new and not yet pushed. |
 | 18 | 2026-10-23 21:50 | Asked for terminal commands to open the website and a permanent place to reach the frontend and backend | Added Desktop shortcuts: "DoseWISE website" (http://localhost:5173), "DoseWISE backend API" (http://localhost:8000/api/docs) and "Start DoseWISE" (runs `start-dosewise.bat`). Both servers were up (site 200, API ok). The Servers panel entries in `.claude/launch.json` attach to the same servers. |
+| 19 | 2026-10-23 22:30 | Asked for easy steps to integrate DynamoDB, Cognito, Bedrock, SNS and Location Service; then asked to auto-link them if possible | **Could not link automatically:** this PC has no AWS CLI and no AWS credentials, and signing in is the owner's step. Instead: added `scripts/aws_setup.py`, one command that (after `aws configure`) creates or reuses the DynamoDB table, SNS topic, Location place index, a working Bedrock model, and with `--cognito` the user pool, client and domain, then writes the settings into `backend/.env` (safe to re-run). Also added `docs/AWS_SETUP_GUIDE.md` (step-by-step guide) and `docs/aws-iam-policy.json` (least-privilege IAM policy). Code: SNS can now text patients (+91, Transactional, DLT entity/template/sender IDs); SMS text fits one DLT template; Bedrock AI drug-drug screening is checked against the prescribed list, labelled unverified, and never counts as 'no interactions' (doctor UI shows a notice). New `.env.example` keys. Tests: backend 35 pass, frontend typecheck OK. Not verified against real AWS. |

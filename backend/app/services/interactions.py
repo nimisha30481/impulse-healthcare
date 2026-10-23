@@ -147,6 +147,21 @@ def assess(db: Session, patient_id: str, *, new_item: PrescriptionItem | None, u
         a.error = f"Knowledge source error: {str(e)[:200]}"
         a.status = "failed"
 
+    # --- optional AI screening (Amazon Bedrock): extra signal for the doctor, never a safety result ---
+    if len(meds) >= 2:
+        ai = aws_services.bedrock_interaction_screen(meds)
+        if ai.state == "ok":
+            a.checks_performed = [*a.checks_performed, "ai_screening"]
+            for hit in ai.data:
+                db.add(InteractionAlert(
+                    assessment_id=a.id, kind="ai_screening", severity=hit["severity"], medicines=hit["medicines"],
+                    explanation=hit["explanation"], consequences=hit["consequences"] or None,
+                    source=f"AI screening (Amazon Bedrock, {ai.meta['model']}) — unverified",
+                    review_guidance="AI-generated. Confirm in a licensed drug reference before acting.",
+                ))
+        elif ai.state == "failed":
+            a.checks_unavailable = [*a.checks_unavailable, "ai_screening"]
+
     audit.record(db, action="interaction_assessment", resource_type="interaction_assessment", resource_id=a.id,
                  patient_id=patient_id, user=user, reason=a.status)
     db.flush()

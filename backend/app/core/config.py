@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     sns_ops_topic_arn: str = ""
     ses_from_address: str = ""
     sms_origination_identity: str = ""  # AWS End User Messaging SMS phone pool / sender id
+    sns_sms_enabled: bool = False  # send patient/doctor SMS through Amazon SNS instead
+    sns_sms_sender_id: str = ""  # DLT-registered sender ID (India)
+    sns_dlt_entity_id: str = ""  # TRAI DLT principal entity ID (required for SMS to Indian numbers)
+    sns_dlt_template_id: str = ""  # DLT template ID registered for the reminder text
+    bedrock_interaction_screening: bool = False  # AI drug-drug screening (labelled unverified)
     healthlake_datastore_endpoint: str = ""
     healthlake_region: str = ""
     comprehend_medical_region: str = ""

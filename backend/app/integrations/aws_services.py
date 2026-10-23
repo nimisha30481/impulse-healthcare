@@ -110,13 +110,39 @@ def send_email(to: str, subject: str, text: str) -> Result:
         return Result("failed", error=str(e)[:300])
 
 
+def e164(phone: str) -> str | None:
+    """Indian 10-digit mobile -> +91XXXXXXXXXX; numbers already in +E.164 pass through."""
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    if phone.strip().startswith("+") and 8 <= len(digits) <= 15:
+        return "+" + digits
+    if len(digits) == 10:
+        return "+91" + digits
+    if len(digits) == 12 and digits.startswith("91"):
+        return "+" + digits
+    return None
+
+
 def send_sms(phone: str, text: str) -> Result:
     s = get_settings()
+    number = e164(phone or "")
+    if s.sns_sms_enabled and not s.sms_origination_identity:
+        if not number:
+            return Result("failed", error="Invalid mobile number")
+        attrs = {"AWS.SNS.SMS.SMSType": {"DataType": "String", "StringValue": "Transactional"}}
+        for key, val in (("AWS.SNS.SMS.SenderID", s.sns_sms_sender_id), ("AWS.MM.SMS.EntityId", s.sns_dlt_entity_id),
+                         ("AWS.MM.SMS.TemplateId", s.sns_dlt_template_id)):
+            if val:
+                attrs[key] = {"DataType": "String", "StringValue": val}
+        try:
+            resp = client("sns").publish(PhoneNumber=number, Message=text, MessageAttributes=attrs)
+            return Result("ok", data=resp["MessageId"])
+        except Exception as e:  # noqa: BLE001
+            return Result("failed", error=str(e)[:300])
     if not s.sms_origination_identity:
         return Result("not_configured")
     try:
         resp = client("pinpoint-sms-voice-v2").send_text_message(
-            DestinationPhoneNumber=phone,
+            DestinationPhoneNumber=number or phone,
             OriginationIdentity=s.sms_origination_identity,
             MessageBody=text,
             MessageType="TRANSACTIONAL",
@@ -209,6 +235,46 @@ def bedrock_summarize(facts: list[dict]) -> Result:
         if cited - known:
             return Result("failed", error="Summary cited sources that were not provided; discarded")
         return Result("ok", data=text)
+    except Exception as e:  # noqa: BLE001
+        return Result("failed", error=str(e)[:300])
+
+
+INTERACTION_SYSTEM = (
+    "You are a medication-safety screening assistant for clinicians. Given a patient's medicine list, list "
+    "only clinically recognised drug-drug interactions between medicines IN THE LIST. Respond with JSON only: "
+    '{"interactions":[{"medicines":["<name from list>","<name from list>"],"severity":"major|moderate|minor",'
+    '"explanation":"<one sentence>","consequences":"<one sentence>"}]}. If you are not confident, leave it out. '
+    "Never give dosing advice, never recommend stopping or changing a medicine."
+)
+
+
+def bedrock_interaction_screen(medicines: list[dict]) -> Result:
+    """AI screening only. Output is validated (names must come from the input list, severity from a fixed
+    set) and is always presented as unverified. An empty result is NOT evidence of safety."""
+    s = get_settings()
+    if not (s.bedrock_model_id and s.bedrock_interaction_screening):
+        return Result("not_configured")
+    names = {m["name"].lower(): m["name"] for m in medicines}
+    try:
+        resp = client("bedrock-runtime", s.bedrock_region or s.aws_region).converse(
+            modelId=s.bedrock_model_id,
+            system=[{"text": INTERACTION_SYSTEM}],
+            messages=[{"role": "user", "content": [{"text": json.dumps(
+                [{"name": m["name"], "strength": m.get("strength"), "route": m.get("route"),
+                  "ingredients": m.get("ingredients")} for m in medicines])}]}],
+            inferenceConfig={"maxTokens": 800, "temperature": 0},
+        )
+        text = resp["output"]["message"]["content"][0]["text"]
+        raw = json.loads(text[text.find("{"): text.rfind("}") + 1])
+        found = []
+        for hit in raw.get("interactions", [])[:10]:
+            meds = [names.get(str(n).lower()) for n in hit.get("medicines", [])]
+            if len(meds) < 2 or None in meds or hit.get("severity") not in ("major", "moderate", "minor"):
+                continue  # discard anything that doesn't refer to the actual list
+            found.append({"medicines": meds, "severity": hit["severity"],
+                          "explanation": str(hit.get("explanation", ""))[:400],
+                          "consequences": str(hit.get("consequences", ""))[:400]})
+        return Result("ok", data=found, meta={"model": s.bedrock_model_id})
     except Exception as e:  # noqa: BLE001
         return Result("failed", error=str(e)[:300])
 
