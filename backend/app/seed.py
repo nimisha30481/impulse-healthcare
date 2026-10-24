@@ -263,6 +263,11 @@ def seed(db):
     neha_u, neha = patient("Neha", "Gupta", "DWP-100110", "DW-N5GPT8", date(1988, 12, 1), "Female", "AB-",
                            "none_known", "has_conditions", "#334155", "9000000030")
 
+    # height (cm), weight (kg); BMI is calculated from these
+    for p, h, w in ((ananya, 156, 68), (rahul, 172, 84), (meera, 162, 55), (suresh, 168, 74), (lakshmi, 154, 70),
+                    (imran, 176, 79), (divya, 160, 63), (arvind, 170, 66), (aarav, 138, 32), (neha, 158, 72)):
+        p.height_cm, p.weight_kg = h, w
+
     kavya = mk_user(db, f"kavya.rao@{DOMAIN}", "caregiver", "Kavya Rao", "9000000031", "#db2777", "Kavya")
     db.add(CaregiverProfile(user_id=kavya.id, relationship_note="Daughter of Ananya Rao"))
     db.flush()

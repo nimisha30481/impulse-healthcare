@@ -62,3 +62,13 @@ def test_guest_view_is_one_time_and_rotates_the_access_id():
     assert new_id != first_id  # rotated automatically
     assert Api().post("/api/access/guest-view", {"access_id": first_id}).status_code == 404  # old one is dead
     assert Api().post("/api/access/guest-view", {"access_id": new_id}).status_code == 200
+
+
+def test_body_measurements_and_bmi():
+    api, me = register("patient")
+    pid = me["patient_id"]
+    url = f"/api/patients/{pid}/health/self-reported"
+    assert api.patch(url, {"date_of_birth": "1990-05-20", "sex": "Female", "height_cm": 160, "weight_kg": 64}).status_code == 200
+    d = api.get(f"/api/patients/{pid}/health").json()["demographics"]
+    assert d["bmi"] == 25.0 and d["bmi_category"] == "Overweight" and d["age"] >= 36 and d["sex"] == "Female"
+    assert api.patch(url, {"height_cm": 900}).status_code == 422  # impossible values are refused

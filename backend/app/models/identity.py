@@ -51,6 +51,8 @@ class PatientProfile(IdMixin, TimestampMixin, Base):
     date_of_birth: Mapped[date | None] = mapped_column(Date)
     sex: Mapped[str | None] = mapped_column(String(24))
     blood_group: Mapped[str | None] = mapped_column(String(8))
+    height_cm: Mapped[float | None] = mapped_column(Float)
+    weight_kg: Mapped[float | None] = mapped_column(Float)
     # Allergy knowledge state: unknown | none_known | has_allergies. Missing data is NOT "no allergies".
     allergy_status: Mapped[str] = mapped_column(String(16), default="unknown")
     condition_status: Mapped[str] = mapped_column(String(16), default="unknown")

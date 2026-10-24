@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { DateInput } from "@/components/ui/DateInput";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -118,12 +119,14 @@ function KnowledgeTag({ status }: { status: string }) {
 
 function HealthOverview({ patientId }: { patientId: string }) {
   const q = useQuery({ queryKey: ["health", patientId], queryFn: () => api.get(`/api/patients/${patientId}/health`) });
-  const [edit, setEdit] = useState(false);
+  const [edit, setEdit] = useState<false | "info" | "body">(false);
   const [form, setForm] = useState<any>({});
   const qc = useQueryClient();
   const toast = useToast();
   const save = useMutation({
-    mutationFn: () => api.patch(`/api/patients/${patientId}/health/self-reported`, form),
+    mutationFn: () => api.patch(`/api/patients/${patientId}/health/self-reported`, edit === "body" ? {
+      date_of_birth: form.date_of_birth || null, sex: form.sex || null,
+      height_cm: form.height_cm === "" ? null : Number(form.height_cm), weight_kg: form.weight_kg === "" ? null : Number(form.weight_kg) } : form),
     onSuccess: () => { toast("ok", "Saved as patient-reported information."); setEdit(false); qc.invalidateQueries({ queryKey: ["health"] }); },
     onError: (e) => toast("danger", errorMessage(e)),
   });
@@ -152,6 +155,20 @@ function HealthOverview({ patientId }: { patientId: string }) {
           {h.allergies.items.length === 0 && <li className="text-sm text-ink-3">{h.allergies.status === "none_known" ? "No known allergies reported." : "Allergy status unknown — this is not the same as 'no allergies'."}</li>}
         </ul>
       </section>
+      <section className="card p-5 lg:col-span-2">
+        <div className="flex items-center justify-between"><h2 className="font-bold">Body measurements</h2>
+          <Button size="sm" variant="outline" onClick={() => { setForm({ date_of_birth: h.demographics.date_of_birth ?? "", sex: h.demographics.sex ?? "", height_cm: h.demographics.height_cm ?? "", weight_kg: h.demographics.weight_kg ?? "" }); setEdit("body"); }}
+            icon={<Pencil className="h-4 w-4" />}>Edit</Button></div>
+        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
+          <div className="rounded-xl bg-surface-2 p-3"><dt className="text-ink-3">Age</dt><dd className="font-display text-lg font-bold">{h.demographics.age != null ? `${h.demographics.age} years` : "—"}</dd></div>
+          <div className="rounded-xl bg-surface-2 p-3"><dt className="text-ink-3">Sex</dt><dd className="font-display text-lg font-bold">{h.demographics.sex ?? "—"}</dd></div>
+          <div className="rounded-xl bg-surface-2 p-3"><dt className="text-ink-3">Height</dt><dd className="font-display text-lg font-bold">{h.demographics.height_cm ? `${h.demographics.height_cm} cm` : "—"}</dd></div>
+          <div className="rounded-xl bg-surface-2 p-3"><dt className="text-ink-3">Weight</dt><dd className="font-display text-lg font-bold">{h.demographics.weight_kg ? `${h.demographics.weight_kg} kg` : "—"}</dd></div>
+          <div className="rounded-xl bg-surface-2 p-3"><dt className="text-ink-3">BMI</dt><dd className="font-display text-lg font-bold">{h.demographics.bmi ?? "—"}</dd>
+            {h.demographics.bmi_category && <dd className="text-xs text-ink-3">{h.demographics.bmi_category}</dd>}</div>
+        </dl>
+        <p className="mt-2 text-xs text-ink-3">BMI is calculated from your height and weight.</p>
+      </section>
       <section className="card p-5">
         <h2 className="font-bold">Current medicines</h2>
         <ul className="mt-3 space-y-1.5 text-sm">{h.current_medicines.map((m: any) => <li key={m.id} className="flex items-center gap-2"><Pill className="h-4 w-4 text-primary" />{m.current.generic_name} {m.current.strength} — {m.current.frequency_label}</li>)}
@@ -159,7 +176,7 @@ function HealthOverview({ patientId }: { patientId: string }) {
       </section>
       <section className="card p-5">
         <div className="flex items-center justify-between"><h2 className="font-bold">Emergency information</h2>
-          <Button size="sm" variant="outline" onClick={() => { setForm({ emergency_contact_name: h.emergency.contact_name ?? "", emergency_contact_phone: h.emergency.contact_phone ?? "", emergency_contact_relation: h.emergency.relation ?? "", blood_group: h.emergency.blood_group ?? "", emergency_info_shareable: h.emergency.shareable, patient_reported_notes: h.patient_reported ?? "", allergy_status: h.allergies.status }); setEdit(true); }}
+          <Button size="sm" variant="outline" onClick={() => { setForm({ emergency_contact_name: h.emergency.contact_name ?? "", emergency_contact_phone: h.emergency.contact_phone ?? "", emergency_contact_relation: h.emergency.relation ?? "", blood_group: h.emergency.blood_group ?? "", emergency_info_shareable: h.emergency.shareable, patient_reported_notes: h.patient_reported ?? "", allergy_status: h.allergies.status }); setEdit("info"); }}
             icon={<Pencil className="h-4 w-4" />}>Edit</Button></div>
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div><dt className="text-ink-3">Contact</dt><dd className="font-semibold">{h.emergency.contact_name ?? "Not set"}{h.emergency.relation && ` (${h.emergency.relation})`}</dd></div>
@@ -169,7 +186,17 @@ function HealthOverview({ patientId }: { patientId: string }) {
         </dl>
         {h.patient_reported && <p className="mt-3 rounded-xl bg-primary-soft/60 p-3 text-sm"><Provenance value="patient_reported" /> <span className="ml-1">{h.patient_reported}</span></p>}
       </section>
-      <Modal open={edit} onClose={() => setEdit(false)} title="Update your details" size="lg"
+      <Modal open={edit === "body"} onClose={() => setEdit(false)} title="Update body measurements"
+        footer={<><Button variant="outline" onClick={() => setEdit(false)}>Cancel</Button><Button onClick={() => save.mutate()} loading={save.isPending}>Save</Button></>}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Date of birth">{(p) => <DateInput {...p} value={form.date_of_birth ?? ""} max={new Date().toISOString().slice(0, 10)} onChange={(v) => setForm({ ...form, date_of_birth: v })} />}</Field>
+          <Field label="Sex">{(p) => <Select {...p} value={form.sex ?? ""} onChange={(e) => setForm({ ...form, sex: e.target.value })}>
+            <option value="">Not recorded</option><option>Female</option><option>Male</option><option>Other</option></Select>}</Field>
+          <Field label="Height (cm)">{(p) => <Input {...p} type="number" inputMode="decimal" min={40} max={250} value={form.height_cm ?? ""} onChange={(e) => setForm({ ...form, height_cm: e.target.value })} />}</Field>
+          <Field label="Weight (kg)">{(p) => <Input {...p} type="number" inputMode="decimal" min={2} max={350} step="0.1" value={form.weight_kg ?? ""} onChange={(e) => setForm({ ...form, weight_kg: e.target.value })} />}</Field>
+        </div>
+      </Modal>
+      <Modal open={edit === "info"} onClose={() => setEdit(false)} title="Update your details" size="lg"
         footer={<><Button variant="outline" onClick={() => setEdit(false)}>Cancel</Button><Button onClick={() => save.mutate()} loading={save.isPending}>Save</Button></>}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Emergency contact name">{(p) => <Input {...p} value={form.emergency_contact_name ?? ""} onChange={(e) => setForm({ ...form, emergency_contact_name: e.target.value })} />}</Field>

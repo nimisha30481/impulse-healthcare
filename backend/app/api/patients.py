@@ -1,6 +1,6 @@
 """Patient-scoped data. Used by patients for themselves and by caregivers/doctors/support for
 patients they are authorised for - every route calls authorize_patient with a specific scope."""
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
@@ -38,7 +38,7 @@ from app.models import (
     User,
 )
 from app.models.base import new_id, utcnow
-from app.services import escalation, interactions, medication_schedule, notifications, ocr, realtime
+from app.services import escalation, interactions, medication_schedule, notifications, ocr, realtime, vitals
 from app.services.permissions import authorize_patient, users_with_access
 
 router = APIRouter(prefix="/api/patients/{patient_id}", tags=["patients"])
@@ -223,7 +223,7 @@ def health(patient_id: str, user: User = Depends(current_user), db: Session = De
         "emergency": {"contact_name": p.emergency_contact_name, "contact_phone": p.emergency_contact_phone,
                       "relation": p.emergency_contact_relation, "blood_group": p.blood_group,
                       "shareable": p.emergency_info_shareable},
-        "demographics": {"date_of_birth": p.date_of_birth, "sex": p.sex, "mrn": p.mrn},
+        "demographics": {"date_of_birth": p.date_of_birth, "mrn": p.mrn, **vitals.body(p)},
         "patient_reported": p.patient_reported_notes,
     }
 
@@ -238,6 +238,10 @@ class SelfReported(BaseModel):
     blood_group: str | None = Field(default=None, max_length=8)
     new_allergy: str | None = Field(default=None, max_length=120)
     new_allergy_reaction: str | None = Field(default=None, max_length=200)
+    date_of_birth: date | None = None
+    sex: str | None = Field(default=None, pattern="^(Female|Male|Other)$")
+    height_cm: float | None = Field(default=None, ge=40, le=250)
+    weight_kg: float | None = Field(default=None, ge=2, le=350)
 
 
 @router.patch("/health/self-reported")

@@ -32,7 +32,7 @@ from app.models import (
 )
 from app.models.base import utcnow
 from app.schemas.prescriptions import Discontinue, MedicationOrder, PrescriptionCreate, PrescriptionEdit, StatusChange
-from app.services import booking, clinical_brief, interactions, notifications, prescriptions, realtime
+from app.services import booking, clinical_brief, interactions, notifications, prescriptions, realtime, vitals
 from app.services.medication_schedule import adherence_summary
 from app.services.permissions import authorize_patient, patients_visible_to, users_with_access
 
@@ -158,7 +158,7 @@ def patient_profile(patient_id: str, user: User = Depends(Doctor), db: Session =
         "access": acc.kind,
         "patient": {"id": p.id, "name": p.user.full_name, "mrn": p.mrn, "dob": p.date_of_birth, "sex": p.sex,
                     "blood_group": p.blood_group, "avatar_color": p.user.avatar_color, "user_id": p.user_id,
-                    "allergy_status": p.allergy_status, "timezone": p.timezone},
+                    "allergy_status": p.allergy_status, "timezone": p.timezone, **vitals.body(p)},
         "prescriptions": [S.item(i) for i in items if i.versions],
         "recent_encounters": [S.record(r) for r in encounters],
         "follow_ups": [S.instruction(f) for f in fus],

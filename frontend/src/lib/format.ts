@@ -46,3 +46,10 @@ export function pct(n: number | null | undefined) {
 }
 
 export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** Age, sex, height, weight and BMI in one line; missing parts are left out. */
+export function bodySummary(b: { age?: number | null; sex?: string | null; height_cm?: number | null; weight_kg?: number | null;
+  bmi?: number | null; bmi_category?: string | null }): string {
+  return [b.age != null ? `${b.age} y` : null, b.sex, b.height_cm ? `${b.height_cm} cm` : null, b.weight_kg ? `${b.weight_kg} kg` : null,
+    b.bmi ? `BMI ${b.bmi}${b.bmi_category ? ` (${b.bmi_category})` : ""}` : null].filter(Boolean).join(" · ");
+}

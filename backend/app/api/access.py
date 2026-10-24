@@ -23,7 +23,7 @@ from app.models import (
     User,
 )
 from app.models.base import utcnow
-from app.services import access_ids, notifications
+from app.services import access_ids, notifications, vitals
 from app.services.medication_schedule import adherence_summary
 from app.services.permissions import authorize_patient, patient_of
 
@@ -91,7 +91,7 @@ def read_only_chart(db: Session, p) -> dict:
     adh = adherence_summary(db, p.id, 30)
     return {
         "patient": {"name": p.user.full_name, "access_id": p.access_id, "dob": p.date_of_birth, "sex": p.sex,
-                    "blood_group": p.blood_group, "phone": p.user.phone,
+                    "blood_group": p.blood_group, "phone": p.user.phone, **vitals.body(p),
                     "emergency_contact": {"name": p.emergency_contact_name, "phone": p.emergency_contact_phone,
                                           "relation": p.emergency_contact_relation}},
         "allergy_status": p.allergy_status,

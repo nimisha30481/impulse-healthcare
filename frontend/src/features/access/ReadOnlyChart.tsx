@@ -2,7 +2,7 @@ import { Activity, AlertTriangle, CheckCircle2, Clock, FileText, Phone, Pill, Pr
 import { Badge, Button } from "@/components/ui/primitives";
 import { Notice } from "@/components/ui/feedback";
 import { Provenance } from "@/components/ui/domain";
-import { fmtDate, fmtDateTime, pct, titleCase } from "@/lib/format";
+import { fmtDate, fmtDateTime, pct, titleCase, bodySummary } from "@/lib/format";
 
 const DOSE_STATE: Record<string, { label: string; tone: any; icon: any }> = {
   taken: { label: "Taken", tone: "ok", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
@@ -39,7 +39,7 @@ export function ReadOnlyChart({ data, onNewSearch, secondsLeft }: { data: any; o
       <div className="card grid gap-4 p-5 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div>
           <h2 className="text-2xl font-extrabold">{p.name}</h2>
-          <p className="text-sm text-ink-3">{p.dob ? `DOB ${fmtDate(p.dob)}` : "DOB not recorded"} · {p.sex ?? "Sex not recorded"}{p.phone && ` · ${p.phone}`}</p>
+          <p className="text-sm text-ink-3">{p.dob ? `DOB ${fmtDate(p.dob)}` : "DOB not recorded"} · {bodySummary(p) || "Sex not recorded"}{p.phone && ` · ${p.phone}`}</p>
         </div>
         <div className="rounded-xl border border-line p-3 text-center"><p className="text-xs text-ink-3">Blood group</p><p className="font-display text-xl font-extrabold text-danger">{p.blood_group ?? "Unknown"}</p></div>
         <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-3 text-center">

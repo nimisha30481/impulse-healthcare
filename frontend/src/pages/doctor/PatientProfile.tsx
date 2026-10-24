@@ -13,7 +13,7 @@ import { BriefView } from "@/features/briefs/BriefView";
 import { DoseLog } from "@/features/access/AccessComponents";
 import { MessageThread } from "@/pages/shared/Messages";
 import { api, errorMessage } from "@/lib/api";
-import { fmtDate, fmtDateTime, titleCase } from "@/lib/format";
+import { fmtDate, fmtDateTime, titleCase, bodySummary } from "@/lib/format";
 import type { MedItem } from "@/lib/types";
 import { DateInput } from "@/components/ui/DateInput";
 
@@ -55,7 +55,7 @@ export default function DoctorPatientProfile() {
         <Avatar name={p.name} color={p.avatar_color} size={56} />
         <div className="flex-1">
           <h1 className="text-2xl font-extrabold">{p.name}</h1>
-          <p className="text-sm text-ink-3">{p.mrn} · {age != null ? `${age} y` : "Age unknown"} · {p.sex ?? "Sex not recorded"} · Blood group {p.blood_group ?? "unknown"}</p>
+          <p className="text-sm text-ink-3">{p.mrn} · {bodySummary({ ...p, age: p.age ?? age }) || "Age unknown"} · Blood group {p.blood_group ?? "unknown"}</p>
           {d.access === "break_glass" && <Badge tone="danger" className="mt-1">Emergency access — read only, logged</Badge>}
         </div>
         <div className="flex flex-wrap gap-2">
