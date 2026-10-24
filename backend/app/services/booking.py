@@ -129,7 +129,7 @@ def confirm(db: Session, user: User, patient: PatientProfile, hold_id: str, reas
     )
     db.add(appt)
     db.flush()
-    _ensure_doctor_access(db, patient.id, slot.doctor_user_id, user.id)
+    _ensure_doctor_access(db, patient.id, slot.doctor_user_id, user.id, until=slot.ends_at + timedelta(days=1))
     doctor = db.get(User, slot.doctor_user_id)
     local = _local(slot.starts_at)
     if rescheduled_from:
@@ -154,9 +154,9 @@ def confirm(db: Session, user: User, patient: PatientProfile, hold_id: str, reas
     return appt
 
 
-def _ensure_doctor_access(db: Session, patient_id: str, doctor_id: str, granted_by: str) -> None:
+def _ensure_doctor_access(db: Session, patient_id: str, doctor_id: str, granted_by: str, until) -> None:
     """Booking with a doctor grants that doctor clinical access for the consultation (recorded
-    as granting_authority=appointment, expiring 90 days later). Patients can revoke it."""
+    as granting_authority=appointment, ending one day after the appointment). Patients can revoke it."""
     existing = db.execute(select(DoctorPatientAccess).where(
         DoctorPatientAccess.patient_id == patient_id, DoctorPatientAccess.doctor_user_id == doctor_id,
         DoctorPatientAccess.status == "active")).scalar_one_or_none()
@@ -164,7 +164,7 @@ def _ensure_doctor_access(db: Session, patient_id: str, doctor_id: str, granted_
         db.add(DoctorPatientAccess(patient_id=patient_id, doctor_user_id=doctor_id,
                                    scopes=["clinical.read", "clinical.write", "prescribe"],
                                    purpose="Consultation booked through DoseWISE", granting_authority="appointment",
-                                   granted_by=granted_by, starts_at=utcnow(), expires_at=utcnow() + timedelta(days=90)))
+                                   granted_by=granted_by, starts_at=utcnow(), expires_at=until))
 
 
 def _local(dt) -> str:

@@ -72,3 +72,21 @@ def test_body_measurements_and_bmi():
     d = api.get(f"/api/patients/{pid}/health").json()["demographics"]
     assert d["bmi"] == 25.0 and d["bmi_category"] == "Overweight" and d["age"] >= 36 and d["sex"] == "Female"
     assert api.patch(url, {"height_cm": 900}).status_code == 422  # impossible values are refused
+
+
+def test_doctor_access_id_is_one_time_too():
+    p_api, patient = register("patient")
+    d_api, doc = make_doctor()
+    first = p_api.get("/api/me/access-id").json()["access_id"]
+    r = d_api.post("/api/doctor/access-id", {"access_id": first})
+    assert r.status_code == 200 and r.json()["patient_id"] == patient["patient_id"]
+    assert d_api.post("/api/doctor/access-id", {"access_id": first}).status_code == 404  # same ID again: refused
+    assert p_api.get("/api/me/access-id").json()["access_id"] != first  # patient got a new one
+    assert d_api.get(f"/api/patients/{patient['patient_id']}/records").status_code == 200  # usable now
+    from app.core.database import SessionLocal
+    from app.models import DoctorPatientAccess
+    db = SessionLocal()
+    g = db.query(DoctorPatientAccess).filter(DoctorPatientAccess.patient_id == patient["patient_id"]).one()
+    left = (g.expires_at - utcnow()).total_seconds()
+    db.close()
+    assert 0 < left <= 15 * 60  # 15 minutes, never 90 days

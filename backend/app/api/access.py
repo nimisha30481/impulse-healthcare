@@ -165,6 +165,9 @@ class DoctorAccessIn(BaseModel):
     access_id: str = Field(min_length=4, max_length=32)
 
 
+ACCESS_ID_MINUTES = 15  # a registered doctor's access from an Access ID, same as a guest view
+
+
 @router.post("/doctor/access-id")
 def doctor_access(body: DoctorAccessIn, request: Request, user: User = Depends(require_roles("doctor")),
                   db: Session = Depends(get_db)):
@@ -180,16 +183,22 @@ def doctor_access(body: DoctorAccessIn, request: Request, user: User = Depends(r
         DoctorPatientAccess.status == "active")).scalars().first()
     if acc and acc.expires_at and acc.expires_at <= now:
         acc.status, acc = "expired", None
+    until = now + timedelta(minutes=ACCESS_ID_MINUTES)
     if acc:
-        acc.expires_at = max(acc.expires_at or now, now + timedelta(days=90))
+        # an existing grant (care team, booking) is kept as it is; the Access ID never lengthens it
+        acc.expires_at = max(acc.expires_at or until, until)
     else:
         acc = DoctorPatientAccess(patient_id=p.id, doctor_user_id=user.id, purpose="Opened with the patient's Access ID",
-                                  granting_authority="access_id", granted_by=p.user_id, starts_at=now,
-                                  expires_at=now + timedelta(days=90))
+                                  granting_authority="access_id", granted_by=p.user_id, starts_at=now, expires_at=until)
         db.add(acc)
-        notifications.notify(db, p.user, category="security", title="A doctor opened your record",
-                             body=f"{user.full_name} used your Access ID. You can revoke this in Care Team.",
-                             patient_id=p.id, link="/patient/care-team")
+    # one-time use, as for guests: the ID stops working the moment it is used and the patient gets a new one.
+    p.access_id, p.access_id_created_at = access_ids.new_access_id(db), now
+    audit.record(db, action="access_id_regenerated", resource_type="patient", resource_id=p.id, patient_id=p.id,
+                 user=user, reason="automatic after doctor used it")
+    notifications.notify(db, p.user, category="security", title="A doctor opened your record",
+                         body=f"{user.full_name} used your Access ID and can see your record for {ACCESS_ID_MINUTES} minutes "
+                              "(revoke any time in Care Team). That ID no longer works; your new one is on your dashboard.",
+                         patient_id=p.id, link="/patient/care-team")
     db.flush()
     audit.record(db, action="doctor_access_id_granted", resource_type="doctor_access", resource_id=acc.id,
                  patient_id=p.id, user=user, auth_context="patient_access_id", ip_address=client_ip(request))
