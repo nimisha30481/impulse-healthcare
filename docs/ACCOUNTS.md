@@ -23,6 +23,8 @@ email code is needed). Accounts you register yourself on the website use Amazon 
 
 ## Patients (each has exactly 3 medical-history records)
 
+Access IDs below are the starting ones. **Each Access ID works for one guest view (15 minutes); DoseWISE then issues the patient a new one automatically**, shown on their dashboard. Sign in as the patient to see the current ID.
+
 | Patient | Access ID | Main conditions | Their doctors | Email |
 |---|---|---|---|---|
 | Ananya Rao | DW-ANANYA | Type 2 diabetes, hypertension | Mehra, Khan, Iyer (caregiver: Kavya Rao) | ananya.rao@dosewise.in |

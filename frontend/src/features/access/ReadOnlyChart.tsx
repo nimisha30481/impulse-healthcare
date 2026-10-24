@@ -18,7 +18,7 @@ export function DoseStateBadge({ state }: { state: string }) {
 }
 
 /** Read-only clinical chart shown to guest doctors (no editing controls anywhere). */
-export function ReadOnlyChart({ data, onNewSearch }: { data: any; onNewSearch: () => void }) {
+export function ReadOnlyChart({ data, onNewSearch, secondsLeft }: { data: any; onNewSearch: () => void; secondsLeft?: number }) {
   const p = data.patient;
   return (
     <div className="space-y-5 print:space-y-3">
@@ -27,7 +27,12 @@ export function ReadOnlyChart({ data, onNewSearch }: { data: any; onNewSearch: (
         <p className="flex-1 text-sm text-ink-2">Opened with Access ID <b className="font-mono">{data.session.access_id}</b> by {data.session.viewer} · {fmtDateTime(data.generated_at)}</p>
         <div className="flex gap-2 print:hidden">
           <Button size="sm" variant="outline" onClick={() => window.print()} icon={<Printer className="h-4 w-4" />}>Print chart</Button>
-          <Button size="sm" onClick={onNewSearch}>Search another patient</Button>
+          {secondsLeft != null && (
+            <Badge tone={secondsLeft < 120 ? "danger" : "warn"} icon={<Clock className="h-3.5 w-3.5" />}>
+              Closes in {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+            </Badge>
+          )}
+          <Button size="sm" onClick={onNewSearch}>End session</Button>
         </div>
       </div>
 

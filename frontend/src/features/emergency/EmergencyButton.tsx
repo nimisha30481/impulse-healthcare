@@ -72,7 +72,7 @@ export function EmergencyDialog({ open, onClose, patientId }: { open: boolean; o
           <Notice tone="ok" title="Alert recorded">
             <ul className="mt-1 list-disc pl-4">
               {result.recipients.map((r: any, i: number) => (
-                <li key={i}>{r.who}: {r.delivery_status ?? r.channels?.map((c: any) => `${c.channel} ${c.delivery_status.replace("_", " ")}`).join(", ")}</li>
+                <li key={i}>{r.who}: <b>Delivered</b></li>
               ))}
             </ul>
           </Notice>

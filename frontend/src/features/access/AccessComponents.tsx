@@ -3,21 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, KeyRound, Lock, RefreshCw } from "lucide-react";
 import { Button, Input, Select, Skeleton } from "@/components/ui/primitives";
-import { ConfirmDialog, EmptyState, ErrorState, Notice, useToast } from "@/components/ui/feedback";
+import { EmptyState, ErrorState, Notice, useToast } from "@/components/ui/feedback";
 import { DoseStateBadge } from "./ReadOnlyChart";
 import { api, errorMessage } from "@/lib/api";
-import { fmtDate, fmtDateTime, fmtTime } from "@/lib/format";
+import { fmtDateTime, fmtTime } from "@/lib/format";
 
-/** Patient dashboard: their Patient Access ID with copy and regenerate. */
+/** Patient dashboard: their Patient Access ID with copy. A new ID is issued automatically every time a
+ *  guest doctor uses it, so this refreshes on its own. */
 export function AccessIdCard() {
-  const q = useQuery({ queryKey: ["access-id"], queryFn: () => api.get("/api/me/access-id") });
+  const q = useQuery({ queryKey: ["access-id"], queryFn: () => api.get("/api/me/access-id"), refetchInterval: 20_000 });
   const [copied, setCopied] = useState(false);
-  const [confirm, setConfirm] = useState(false);
-  const qc = useQueryClient();
   const toast = useToast();
-  const regen = useMutation({ mutationFn: () => api.post("/api/me/access-id/regenerate"),
-    onSuccess: (d) => { qc.setQueryData(["access-id"], d); setConfirm(false); toast("ok", "New Access ID created. The old one no longer works."); },
-    onError: (e) => toast("danger", errorMessage(e)) });
   const copy = async () => {
     try { await navigator.clipboard.writeText(q.data.access_id); setCopied(true); setTimeout(() => setCopied(false), 2000); }
     catch { toast("danger", "Couldn't copy. Select the ID and copy it manually."); }
@@ -32,13 +28,8 @@ export function AccessIdCard() {
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         </button>
       </span>
-      <button onClick={() => setConfirm(true)} className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur hover:bg-white/25">
-        <RefreshCw className="h-4 w-4" /> Regenerate ID
-      </button>
-      <span className="text-xs opacity-80">Share it only with doctors treating you · valid until {fmtDate(q.data.expires_at)}</span>
-      <ConfirmDialog open={confirm} onClose={() => setConfirm(false)} onConfirm={() => regen.mutate()} loading={regen.isPending}
-        title="Regenerate your Access ID?" confirmLabel="Regenerate"
-        body="Anyone holding your current ID (including guest doctors) won't be able to use it any more. Doctors who already opened your record keep their time-limited access; revoke that in Care Team." />
+      <span className="inline-flex items-center gap-1.5 text-xs opacity-80"><RefreshCw className="h-3.5 w-3.5" />
+        Changes automatically after each guest view · share it only with doctors treating you</span>
     </div>
   );
 }

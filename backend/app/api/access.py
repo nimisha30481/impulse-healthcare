@@ -115,6 +115,9 @@ class GuestIn(BaseModel):
     hospital: str | None = Field(default=None, max_length=200)
 
 
+GUEST_MINUTES = 15  # a guest's read-only view closes itself after this
+
+
 @router.post("/access/guest-view")
 def guest_view(body: GuestIn, request: Request, db: Session = Depends(get_db)):
     """Unauthenticated, read-only lookup. The Access ID is the patient's consent; every attempt is logged."""
@@ -140,11 +143,19 @@ def guest_view(body: GuestIn, request: Request, db: Session = Depends(get_db)):
     who = ", ".join(x for x in (body.doctor_name, body.doctor_license, body.hospital) if x) or "an unnamed guest doctor"
     audit.record(db, action="guest_record_view", resource_type="patient", resource_id=p.id, patient_id=p.id,
                  reason=who[:300], auth_context="patient_access_id", source="guest", ip_address=ip)
-    notifications.notify(db, p.user, category="security", title="Your record was viewed with your Access ID",
-                         body=f"Viewed by {who}. If you didn't share your Access ID, regenerate it now.",
-                         patient_id=p.id, link="/patient", priority="high")
     out = read_only_chart(db, p)
-    out["session"] = {"viewer": who, "access_id": p.access_id}
+    used = p.access_id
+    # one-time use: the ID a guest used stops working at once and the patient gets a new one automatically
+    p.access_id, p.access_id_created_at = access_ids.new_access_id(db), utcnow()
+    audit.record(db, action="access_id_regenerated", resource_type="patient", resource_id=p.id, patient_id=p.id,
+                 reason="automatic after guest view", source="guest", ip_address=ip)
+    notifications.notify(db, p.user, category="security", title="Your record was viewed with your Access ID",
+                         body=f"Viewed by {who} (read-only, 15 minutes). For your privacy that ID no longer works; "
+                              "your new Access ID is on your dashboard.",
+                         patient_id=p.id, link="/patient", priority="high")
+    out["patient"]["access_id"] = used
+    out["session"] = {"viewer": who, "access_id": used, "expires_at": utcnow() + timedelta(minutes=GUEST_MINUTES),
+                      "minutes": GUEST_MINUTES}
     db.commit()
     return out
 

@@ -47,3 +47,18 @@ def test_reschedule_links_old_booking_and_notifies(db):
                                          Notification.title == "Appointment cancelled").count() >= 1
     assert db.query(Notification).filter(Notification.user_id == doc["id"],
                                          Notification.title == "Appointment cancelled").count() >= 1
+
+
+def test_guest_view_is_one_time_and_rotates_the_access_id():
+    from conftest import Api
+
+    p_api, patient = register("patient")
+    first_id = p_api.get("/api/me/access-id").json()["access_id"]
+    r = Api().post("/api/access/guest-view", {"access_id": first_id, "doctor_name": "Dr Guest"})
+    assert r.status_code == 200
+    s = r.json()["session"]
+    assert s["minutes"] == 15 and s["expires_at"] and s["access_id"] == first_id
+    new_id = p_api.get("/api/me/access-id").json()["access_id"]
+    assert new_id != first_id  # rotated automatically
+    assert Api().post("/api/access/guest-view", {"access_id": first_id}).status_code == 404  # old one is dead
+    assert Api().post("/api/access/guest-view", {"access_id": new_id}).status_code == 200
