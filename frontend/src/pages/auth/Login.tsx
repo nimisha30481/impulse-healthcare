@@ -35,7 +35,11 @@ export default function Login() {
     setBusy("login");
     try {
       const r = await api.post("/api/auth/login", form);
-      if (r.mfa_required) return nav("/mfa" + (params.get("next") ? `?next=${params.get("next")}` : ""));
+      if (r.mfa_required) {
+        // load the new "waiting for code" session before showing the code page (the cached one says signed out)
+        await qc.refetchQueries({ queryKey: ["session"] });
+        return nav("/mfa" + (params.get("next") ? `?next=${params.get("next")}` : ""));
+      }
       await finish(r.user.role);
     } catch (err) {
       setError(errorMessage(err));

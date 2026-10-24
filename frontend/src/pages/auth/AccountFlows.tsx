@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, KeyRound, ShieldCheck } from "lucide-react";
 import { AuthCard } from "./AuthCard";
@@ -216,7 +216,12 @@ export function MfaChallengePage() {
     } catch (x) { setErr(errorMessage(x)); }
     finally { setBusy(false); }
   };
-  if (session && !session.mfa_pending && !session.authenticated) return <AuthCard title="Session expired"><Link to="/login" className="link">Sign in again</Link></AuthCard>;
+  // re-check the session once on arrival, so a stale cached state never hides the code box
+  const [checked, setChecked] = useState(false);
+  useEffect(() => { qc.refetchQueries({ queryKey: ["session"] }).finally(() => setChecked(true)); }, [qc]);
+  if (!checked) return <AuthCard title="Two-step verification"><Spinner label="Loading" /></AuthCard>;
+  if (session?.authenticated) return <Navigate to={homeFor(session.user!.role)} replace />;
+  if (session && !session.mfa_pending) return <AuthCard title="Session expired" subtitle="Your sign-in step timed out. Enter your email and password again to get a new code prompt."><Link to="/login" className="link">Sign in again</Link></AuthCard>;
   return (
     <AuthCard title="Two-step verification" subtitle="Enter the 6-digit code from your authenticator app, or a backup code.">
       <form onSubmit={submit} className="space-y-4">
