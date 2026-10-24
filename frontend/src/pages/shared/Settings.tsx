@@ -127,14 +127,12 @@ function Security() {
   const all = useMutation({ mutationFn: () => api.post("/api/account/sessions/revoke-all"), onSuccess: async () => { await logout(); nav("/login"); } });
   return (
     <div className="space-y-6">
-      <Panel title="Two-step verification (MFA)" desc="Protect your account with an authenticator app.">
+      <Panel title="Two-step verification (MFA)" desc="Optional: you sign in with just your password unless you turn this on. It adds a code from an authenticator app.">
         {user!.mfa_enabled ? (
           <div className="space-y-3">
             <Badge tone="ok" icon={<ShieldCheck className="h-3 w-3" />}>On</Badge>
-            {user!.role === "patient" || user!.role === "caregiver" ? (
-              <div className="flex flex-wrap gap-2"><Input type="password" aria-label="Password to disable MFA" placeholder="Password" className="max-w-xs" value={disablePw} onChange={(e) => setDisablePw(e.target.value)} />
-                <Button variant="outline" onClick={() => disable.mutate()} disabled={!disablePw}>Turn off</Button></div>
-            ) : <p className="text-sm text-ink-3">Required for clinical and staff accounts.</p>}
+            <div className="flex flex-wrap gap-2"><Input type="password" aria-label="Password to disable MFA" placeholder="Password" className="max-w-xs" value={disablePw} onChange={(e) => setDisablePw(e.target.value)} />
+              <Button variant="outline" onClick={() => disable.mutate()} disabled={!disablePw}>Turn off</Button></div>
           </div>
         ) : mfa ? (
           <div className="grid gap-5 sm:grid-cols-[auto_1fr]">

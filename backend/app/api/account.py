@@ -156,8 +156,7 @@ class DisableMfaIn(BaseModel):
 def mfa_disable(body: DisableMfaIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if not cognito.check_password(user, body.password):
         raise HTTPException(400, "Password is incorrect")
-    if user.role in ("doctor", "support", "admin"):
-        raise HTTPException(400, "MFA is required for clinical and staff accounts")
+    # two-step verification is every user's own choice (any role can turn it on or off)
     user.mfa_enabled, user.mfa_secret, user.backup_codes = False, None, None
     db.add(SecurityEvent(user_id=user.id, kind="mfa_disabled"))
     audit.record(db, action="mfa_disabled", resource_type="user", resource_id=user.id, user=user)
