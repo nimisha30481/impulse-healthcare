@@ -6,27 +6,40 @@ import clsx from "clsx";
 import { Logo } from "../Logo";
 import { Button } from "../ui/primitives";
 import { LanguageSelect } from "../LanguageSelect";
+import { useQueryClient } from "@tanstack/react-query";
 import { homeFor, useAuth, applyPreferences } from "@/lib/auth";
+import { api } from "@/lib/api";
 
 const NAV = [
   { to: "/", label: "Home", hash: "" },
-  { to: "/#features", label: "Features", hash: "#features" },
-  { to: "/#how-it-works", label: "How It Works", hash: "#how-it-works" },
-  { to: "/#patients", label: "For Patients", hash: "#patients" },
-  { to: "/#doctors", label: "For Doctors", hash: "#doctors" },
   { to: "/about", label: "About", hash: "" },
 ];
+// Sign-in / sign-up pages show only the logo, language and theme in the header.
+const AUTH_PAGES = ["/login", "/register", "/verify-email", "/forgot-password", "/reset-password", "/mfa"];
 
 export function ThemeToggle() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const [dark, setDark] = useState(() => document.documentElement.dataset.theme === "dark");
+  useEffect(() => {
+    // stay in step with theme changes made anywhere (Settings, language switch, other toggles)
+    const root = document.documentElement;
+    const obs = new MutationObserver(() => setDark(root.dataset.theme === "dark"));
+    obs.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
   return (
     <button aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
       className="grid h-10 w-10 place-items-center rounded-xl text-ink-2 hover:bg-surface-2"
       onClick={() => {
         const next = dark ? "light" : "dark";
         try { localStorage.setItem("impulse-theme", next); } catch { /* storage unavailable */ }
-        applyPreferences({ theme: next });
-        setDark(!dark);
+        applyPreferences({ ...(user?.preferences ?? {}), theme: next });
+        // signed in: the account preference is what the app re-applies later, so save it there too
+        if (user) {
+          qc.setQueryData(["session"], (s: any) => s?.user ? { ...s, user: { ...s.user, preferences: { ...s.user.preferences, theme: next } } } : s);
+          api.patch("/api/account/preferences", { theme: next }).catch(() => {});
+        }
       }}>
       {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </button>
@@ -40,6 +53,8 @@ export function PublicLayout() {
   const who = user ? (user.preferred_name || user.full_name) : "";
   const [scrolled, setScrolled] = useState(false);
   const loc = useLocation();
+  const minimal = AUTH_PAGES.includes(loc.pathname);
+  const home = loc.pathname === "/";
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 8);
@@ -54,14 +69,20 @@ export function PublicLayout() {
   }, [loc.pathname, loc.hash]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-clip">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2">
         Skip to content
       </a>
       <header className={clsx("sticky top-0 z-40 transition-all", scrolled ? "border-b border-line bg-bg/85 backdrop-blur-md" : "bg-transparent")}>
         <nav className="container-page flex h-16 items-center justify-between gap-4" aria-label="Main">
           <Link to="/" aria-label="DoseWISE home"><Logo /></Link>
-          <div className="hidden items-center gap-1 xl:flex">
+          {minimal ? (
+            <div className="flex items-center gap-2">
+              <LanguageSelect compact />
+              <ThemeToggle />
+            </div>
+          ) : <>
+          <div className="hidden items-center gap-1 lg:flex">
             {NAV.map((n) => (
               <NavLink key={n.label} to={n.to}
                 className={() => clsx("whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -70,7 +91,7 @@ export function PublicLayout() {
               </NavLink>
             ))}
           </div>
-          <div className="hidden items-center gap-2 xl:flex">
+          <div className="hidden items-center gap-2 lg:flex">
             <LanguageSelect compact />
             <ThemeToggle />
             <Link to="/guest"><Button variant="outline" className="whitespace-nowrap" icon={<Stethoscope className="h-4 w-4" />}>Guest Doctor Access</Button></Link>
@@ -86,15 +107,16 @@ export function PublicLayout() {
               </>
             )}
           </div>
-          <button className="grid h-10 w-10 place-items-center rounded-xl hover:bg-surface-2 xl:hidden" aria-label="Open menu"
+          <button className="grid h-10 w-10 place-items-center rounded-xl hover:bg-surface-2 lg:hidden" aria-label="Open menu"
             aria-expanded={open} onClick={() => setOpen(!open)}>
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
+          </>}
         </nav>
         <AnimatePresence>
-          {open && (
+          {open && !minimal && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden border-b border-line bg-bg xl:hidden">
+              className="overflow-hidden border-b border-line bg-bg lg:hidden">
               <div className="container-page flex flex-col gap-1 py-3">
                 {NAV.map((n) => (
                   <Link key={n.label} to={n.to} className="rounded-lg px-3 py-2.5 font-medium text-ink-2 hover:bg-surface-2">{n.label}</Link>
@@ -117,15 +139,15 @@ export function PublicLayout() {
         </AnimatePresence>
       </header>
       <main id="main"><Outlet /></main>
-      <Footer />
+      {!minimal && !home && <Footer />}
     </div>
   );
 }
 
 function Footer() {
   const cols = [
-    { title: "Product", links: [["Features", "/#features"], ["How it works", "/#how-it-works"], ["For patients", "/#patients"], ["For doctors", "/#doctors"], ["Find care", "/directory"]] },
-    { title: "Company", links: [["About", "/about"], ["Guest doctor access", "/guest"],["Contact", "/contact"], ["Help", "/help"]] },
+    { title: "Product", links: [["Home", "/"], ["Get started", "/register"], ["Sign in", "/login"], ["Guest doctor access", "/guest"]] },
+    { title: "Company", links: [["About", "/about"], ["Contact", "/contact"], ["Help", "/help"]] },
     { title: "Trust", links: [["Privacy Policy", "/privacy"], ["Terms", "/terms"], ["Security", "/security"], ["Accessibility", "/accessibility"]] },
   ];
   return (
@@ -151,7 +173,7 @@ function Footer() {
       </div>
       <div className="border-t border-line">
         <div className="container-page flex flex-col gap-2 py-5 text-xs text-ink-3 sm:flex-row sm:justify-between">
-          <span>© {new Date().getFullYear()} DoseWISE. All demo data is fictional.</span>
+          <span>© {new Date().getFullYear()} DoseWISE.</span>
           <span>No certifications, partnerships or regulatory approvals are claimed.</span>
         </div>
       </div>

@@ -85,7 +85,15 @@ def dose(o: DoseOccurrence) -> dict:
 
 
 def appointment(a: Appointment) -> dict:
+    nxt = None
+    if a.status == "rescheduled":  # point the old booking at its replacement
+        from sqlalchemy import select as _select
+        from sqlalchemy.orm import object_session
+
+        nxt = object_session(a).execute(_select(Appointment).where(Appointment.rescheduled_from_id == a.id)
+                                        .order_by(Appointment.created_at.desc())).scalars().first()
     return {
+        "rescheduled_to": {"id": nxt.id, "starts_at": nxt.starts_at, "status": nxt.status} if nxt else None,
         "id": a.id, "patient_id": a.patient_id, "patient_name": a.patient.user.full_name if a.patient else None,
         "doctor": person(a.doctor), "starts_at": a.starts_at, "ends_at": a.ends_at,
         "consultation_type": a.consultation_type, "status": a.status, "reason": a.reason,

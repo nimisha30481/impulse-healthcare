@@ -40,8 +40,27 @@ export function AppointmentsView({ patientId, canBook }: { patientId: string; ca
   });
 
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
-  const Card = ({ a }: { a: Appointment }) => (
-    <li className="card flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+  const goTo = (id: string) => {
+    const el = document.getElementById(`appt-${id}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.classList.add("ring-2", "ring-primary");
+    setTimeout(() => el?.classList.remove("ring-2", "ring-primary"), 1800);
+  };
+  const Card = ({ a }: { a: Appointment & { rescheduled_to?: { id: string; starts_at: string } | null } }) => a.status === "rescheduled" ? (
+    // replaced booking: greyed out and not actionable; points to the new one
+    <li id={`appt-${a.id}`} className="card flex flex-col gap-3 p-4 opacity-60 sm:flex-row sm:items-center" aria-disabled="true">
+      <div className="flex w-16 shrink-0 flex-col items-center rounded-xl bg-surface-2 py-2 text-ink-3">
+        <span className="text-xs font-semibold uppercase">{fmtDate(a.starts_at, { month: "short", day: undefined, year: undefined })}</span>
+        <span className="font-display text-2xl font-extrabold">{fmtDate(a.starts_at, { day: "numeric", month: undefined, year: undefined })}</span>
+      </div>
+      <div className="flex-1 text-ink-3">
+        <p className="font-semibold line-through">{a.doctor.name} · {fmtDateTime(a.starts_at)}</p>
+        <p className="text-sm">{a.rescheduled_to ? <>Rescheduled to {fmtDateTime(a.rescheduled_to.starts_at)}</> : "Rescheduled"}</p>
+      </div>
+      {a.rescheduled_to && <Button size="sm" variant="ghost" onClick={() => goTo(a.rescheduled_to!.id)}>View new booking</Button>}
+    </li>
+  ) : (
+    <li id={`appt-${a.id}`} className="card flex flex-col gap-4 p-4 transition-shadow sm:flex-row sm:items-center">
       <div className="flex w-16 shrink-0 flex-col items-center rounded-xl bg-primary-soft py-2 text-primary">
         <span className="text-xs font-semibold uppercase">{fmtDate(a.starts_at, { month: "short", day: undefined, year: undefined })}</span>
         <span className="font-display text-2xl font-extrabold">{fmtDate(a.starts_at, { day: "numeric", month: undefined, year: undefined })}</span>

@@ -10,11 +10,18 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Modal, Notice } from "@/components/ui/feedback";
 import { LegalText } from "@/pages/public/InfoPage";
 import { api, ApiError, errorMessage } from "@/lib/api";
-import { registerSchema, zodErrors } from "@/lib/schemas";
+import { PASSWORD_RULES, registerSchema, zodErrors } from "@/lib/schemas";
+
+/** Red message listing the rules a typed password still misses (shown as soon as the field is left). */
+function passwordProblem(pw: string): string | undefined {
+  if (!pw) return undefined;
+  const missing = PASSWORD_RULES.filter((r) => !r.test(pw)).map((r) => r.label);
+  return missing.length ? `Password needs: ${missing.join(" · ")}` : undefined;
+}
 
 const ROLES = [
   { id: "patient", label: "Patient", d: "Manage my own medicines and records", icon: <Pill className="h-5 w-5" /> },
-  { id: "doctor", label: "Doctor", d: "Requires medical registration verification", icon: <Stethoscope className="h-5 w-5" /> },
+  { id: "doctor", label: "Doctor", d: "Prescribe and follow up with your patients", icon: <Stethoscope className="h-5 w-5" /> },
 ] as const;
 
 // The draft (never the password) is kept for this browser tab so details survive reading the terms
@@ -65,9 +72,6 @@ export default function Register() {
   if (done?.status === "verify_code") {
     return (
       <AuthCard title="Check your email" subtitle={`Enter the 6-digit code we sent to ${done.email}.`}>
-        {form.role === "doctor" && (
-          <Notice tone="info">After you verify your email, DoseWISE staff will check your medical registration before you can access any clinical features.</Notice>
-        )}
         <div className="mt-4"><VerifyCodeForm email={done.email} /></div>
         <p className="mt-3 text-center text-sm text-ink-3">
           Wrong email address? <button type="button" className="link" onClick={() => setDone(null)}>Go back and change it</button>
@@ -82,9 +86,6 @@ export default function Register() {
         <div className="flex flex-col items-center gap-4 text-center">
           <span className="grid h-14 w-14 place-items-center rounded-2xl bg-ok-soft text-ok"><MailCheck className="h-7 w-7" /></span>
           <p className="text-sm text-ink-2">{done.message}</p>
-          {form.role === "doctor" && (
-            <Notice tone="info">After you verify your email, DoseWISE staff will check your medical registration before you can access any clinical features.</Notice>
-          )}
           {done.dev_link && (
             <Notice tone="warn" title="Development mode: email is not configured">
               Nothing was sent. Use this link to continue: <a className="link break-all" href={done.dev_link}>verify email</a>
@@ -128,10 +129,14 @@ export default function Register() {
           </Field>
           <div className="hidden sm:block" />
           <Field label="Password" error={errors.password} required>
-            {(p) => <PasswordInput {...p} showRules autoComplete="new-password" value={form.password} onChange={set("password")} />}
+            {(p) => <PasswordInput {...p} showRules autoComplete="new-password" value={form.password}
+              onChange={(e) => { setForm({ ...form, password: e.target.value }); if (errors.password) setErrors({ ...errors, password: passwordProblem(e.target.value) ?? "" }); }}
+              onBlur={() => setErrors({ ...errors, password: passwordProblem(form.password) ?? "" })} />}
           </Field>
           <Field label="Confirm password" error={errors.confirm} required>
-            {(p) => <PasswordInput {...p} autoComplete="new-password" value={form.confirm} onChange={set("confirm")} />}
+            {(p) => <PasswordInput {...p} autoComplete="new-password" value={form.confirm} onChange={set("confirm")}
+              onFocus={() => setErrors({ ...errors, password: passwordProblem(form.password) ?? "" })}
+              onBlur={() => setErrors({ ...errors, confirm: form.confirm && form.confirm !== form.password ? "Passwords don't match" : "" })} />}
           </Field>
         </div>
         {form.role === "doctor" && (

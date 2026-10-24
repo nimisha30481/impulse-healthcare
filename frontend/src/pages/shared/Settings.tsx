@@ -68,7 +68,6 @@ function Account() {
   const toast = useToast();
   const nav = useNavigate();
   const [close, setClose] = useState(false);
-  const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
   const m = useMutation({
     mutationFn: () => {
@@ -79,7 +78,7 @@ function Account() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["session"] }); toast("ok", "Profile updated."); },
     onError: (e) => toast("danger", errorMessage(e)),
   });
-  const closeM = useMutation({ mutationFn: () => api.post("/api/account/close", { password: pw, confirm }),
+  const closeM = useMutation({ mutationFn: () => api.post("/api/account/close", { confirm: confirm.trim().toUpperCase() }),
     onSuccess: async (r) => { toast("ok", r.retention_note); await logout(); nav("/"); }, onError: (e) => toast("danger", errorMessage(e)) });
   return (
     <div className="space-y-6">
@@ -100,8 +99,8 @@ function Account() {
         <p className="text-sm text-ink-2">You'll be signed out everywhere and your Access ID stops working. Medical records are kept only for the period the law requires.</p>
         <Button variant="danger" onClick={() => setClose(true)} icon={<Trash2 className="h-4 w-4" />}>Close my account</Button>
       </Panel>
-      <ConfirmDialog open={close} onClose={() => setClose(false)} onConfirm={() => closeM.mutate()} loading={closeM.isPending} tone="danger" title="Close your account?" confirmLabel="Close account"
-        body={<div className="space-y-3"><p>Type <b>CLOSE</b> and enter your password.</p><Input aria-label="Type CLOSE" value={confirm} onChange={(e) => setConfirm(e.target.value)} /><Input aria-label="Password" type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>} />
+      <ConfirmDialog open={close} onClose={() => setClose(false)} onConfirm={() => { if (confirm.trim().toUpperCase() === "CLOSE") closeM.mutate(); else toast("danger", "Type CLOSE to confirm"); }} loading={closeM.isPending} tone="danger" title="Close your account?" confirmLabel="Close account"
+        body={<div className="space-y-3"><p>Type <b>CLOSE</b> to confirm.</p><Input aria-label="Type CLOSE" value={confirm} onChange={(e) => setConfirm(e.target.value)} /></div>} />
     </div>
   );
 }

@@ -172,7 +172,7 @@ def appsync_publish(channel: str, event: dict) -> Result:
 
 # ---------------- Bedrock ----------------
 BEDROCK_SYSTEM = (
-    "You rewrite verified clinical facts into a short, neutral summary for a clinician. "
+    "You rewrite verified clinical facts into a short, neutral summary for a doctor. "
     "Use ONLY the facts provided. Do not add diagnoses, interactions, dosing advice or recommendations. "
     "If a fact is marked missing or conflicting, say so. Cite fact ids in square brackets."
 )
@@ -201,7 +201,7 @@ def bedrock_summarize(facts: list[dict]) -> Result:
 
 
 INTERACTION_SYSTEM = (
-    "You are a medication-safety screening assistant for clinicians. Given a patient's medicine list, list "
+    "You are a medication-safety screening assistant for doctors. Given a patient's medicine list, list "
     "only clinically recognised drug-drug interactions between medicines IN THE LIST. Respond with JSON only: "
     '{"interactions":[{"medicines":["<name from list>","<name from list>"],"severity":"major|moderate|minor",'
     '"explanation":"<one sentence>","consequences":"<one sentence>"}]}. If you are not confident, leave it out. '

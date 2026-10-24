@@ -30,7 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    const onUnauth = () => qc.invalidateQueries({ queryKey: ["session"] });
+    // Any 401 from the API means the server no longer has this session: re-check it so the app
+    // shows the sign-in page instead of a stale "signed in" header over "Not signed in" errors.
+    const onUnauth = () => qc.refetchQueries({ queryKey: ["session"] });
     window.addEventListener("impulse:unauthorized", onUnauth);
     return () => window.removeEventListener("impulse:unauthorized", onUnauth);
   }, [qc]);
@@ -38,9 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await api.post("/api/auth/logout");
+    } catch {
+      /* already signed out on the server */
     } finally {
-      qc.clear(); // drop every cached health record from memory on sign-out
-      await qc.invalidateQueries({ queryKey: ["session"] });
+      // mark signed-out first (qc.clear() alone left the header showing the old user), then drop
+      // every cached health record from memory
+      qc.setQueryData<SessionState>(["session"], (s) => ({
+        demo_enabled: s?.demo_enabled ?? false, auth_provider: s?.auth_provider ?? "local", authenticated: false, user: null,
+      }));
+      qc.removeQueries({ predicate: (query) => query.queryKey[0] !== "session" });
+      await qc.refetchQueries({ queryKey: ["session"] });
     }
   };
 

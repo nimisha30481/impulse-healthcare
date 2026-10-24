@@ -5,7 +5,6 @@ import { ArrowLeft, CalendarCheck2, CheckCircle2, Clock, MapPin, Stethoscope, Ti
 import clsx from "clsx";
 import { Avatar, Badge, Button, Field, Input, Skeleton } from "@/components/ui/primitives";
 import { EmptyState, Modal, Notice, useToast } from "@/components/ui/feedback";
-import { DemoTag } from "@/components/ui/domain";
 import { api, errorMessage } from "@/lib/api";
 import { fmtDate, fmtDateTime, fmtTime, titleCase } from "@/lib/format";
 
@@ -78,6 +77,11 @@ export function BookingWizard({ patientId, open, onClose, followUpId, reschedule
                   <Stethoscope className="h-5 w-5 text-primary" />{s}
                 </button>
               ))}
+              {specs.data && (
+                <p className="text-sm text-ink-3 sm:col-span-2">
+                  {specs.data.length ? "Doctors are currently available only in the specialities shown above." : "No doctors are available for booking right now."}
+                </p>
+              )}
             </div>
           )}
           {step === 1 && (
@@ -89,7 +93,7 @@ export function BookingWizard({ patientId, open, onClose, followUpId, reschedule
                   <div className="flex-1">
                     <p className="font-semibold">{d.name}</p>
                     <p className="text-sm text-ink-3">{d.speciality} · {d.languages?.join(", ")}</p>
-                    {d.organization && <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-3"><MapPin className="h-3 w-3" />{d.organization.name}, {d.organization.address} {d.organization.is_demo && <DemoTag />}</p>}
+                    {d.organization && <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-3"><MapPin className="h-3 w-3" />{d.organization.name}, {d.organization.address}</p>}
                   </div>
                 </button>
               ))}

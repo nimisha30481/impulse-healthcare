@@ -8,7 +8,7 @@ from app.core.database import Base
 from app.models.base import IdMixin, TimestampMixin, UTCDateTime
 
 # Provenance of every clinical fact. Shown in the UI so imported/extracted/patient-reported data
-# is never mistaken for clinician-verified data.
+# is never mistaken for doctor-verified data.
 PROVENANCE = ("clinician_verified", "imported", "ocr_extracted", "patient_reported", "demo")
 
 
@@ -116,7 +116,7 @@ class UploadedDocument(IdMixin, TimestampMixin, Base):
 
 class OCRExtraction(IdMixin, TimestampMixin, Base):
     """Unverified output from OCR/medical NLP or manual transcription. Never activates a
-    prescription by itself: a verified clinician must approve it first."""
+    prescription by itself: a verified doctor must approve it first."""
 
     __tablename__ = "ocr_extractions"
 

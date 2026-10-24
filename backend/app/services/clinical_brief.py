@@ -133,7 +133,7 @@ def generate(db: Session, doctor: User, patient: PatientProfile, appointment_id:
         "missing_information": missing,
         "conflicts": conflicts,
         "uncertainty": [
-            "Patient-reported and OCR-extracted items are marked by provenance and are not clinician-verified.",
+            "Patient-reported and OCR-extracted items are marked by provenance and are not doctor-verified.",
             "Records held outside DoseWISE are not included.",
         ],
     }

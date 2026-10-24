@@ -62,7 +62,7 @@ def require_roles(*roles: str):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "This area is not available for your account type")
         if user.role == "doctor" and (not user.doctor_profile or user.doctor_profile.verification_status != "verified"):
             raise HTTPException(
-                status.HTTP_403_FORBIDDEN, "Your clinician account is awaiting verification by DoseWISE staff"
+                status.HTTP_403_FORBIDDEN, "Your doctor account isn't active yet. Please contact DoseWISE support."
             )
         return user
 

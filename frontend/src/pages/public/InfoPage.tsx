@@ -69,7 +69,7 @@ const PAGES: Record<string, { title: string; intro: string; sections: [string, R
     title: "Help",
     intro: "Quick answers.",
     sections: [
-      ["Trying DoseWISE", <>Use <Link className="link" to="/login">the demo login</Link> to explore every portal with fictional data.</>],
+      ["Trying DoseWISE", <><Link className="link" to="/register">Create an account</Link> as a patient or doctor, or sign in if you already have one.</>],
       ["Why does a dose say 'Unconfirmed'?", "Nobody responded to the reminder. DoseWISE doesn't assume it was taken or missed."],
       ["Why is interaction checking 'unavailable'?", "Drug–drug checking needs a licensed clinical knowledge source. Until one is connected, DoseWISE says so rather than implying safety."],
     ],

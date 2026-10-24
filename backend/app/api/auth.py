@@ -200,7 +200,9 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
             raise HTTPException(400, "Enter your medical registration number (letters, numbers, / or -)")
         db.add(DoctorProfile(user_id=user.id, speciality=body.speciality,
                              registration_number=body.registration_number,
-                             registration_council=body.registration_council, verification_status="pending"))
+                             registration_council=body.registration_council,
+                             # the council registration number is the check; doctors start working straight away
+                             verification_status="verified", verified_at=utcnow()))
     out = {} if use_cognito else _send_link(db, user, "verify_email", _issue_token(db, user, "verify_email", 24))
     audit.record(db, action="account_registered", resource_type="user", resource_id=user.id, user=user,
                  reason="cognito" if use_cognito else None)
@@ -419,13 +421,13 @@ class DemoIn(BaseModel):
     persona: str
 
 
-DEMO_PERSONAS = {
-    "patient": "ananya.demo@impulse.test",
-    "patient2": "rahul.demo@impulse.test",
-    "doctor": "dr.mehra.demo@impulse.test",
-    "caregiver": "kavya.demo@impulse.test",
-    "support": "support.demo@impulse.test",
-    "admin": "admin.demo@impulse.test",
+DEMO_PERSONAS = {  # development-only quick sign-in to the starter accounts (no UI links to it)
+    "patient": "ananya.rao@dosewise.in",
+    "patient2": "rahul.verma@dosewise.in",
+    "doctor": "dr.arjun.mehra@dosewise.in",
+    "caregiver": "kavya.rao@dosewise.in",
+    "support": "priya.nair@dosewise.in",
+    "admin": "admin@dosewise.in",
 }
 
 

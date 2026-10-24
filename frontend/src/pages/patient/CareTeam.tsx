@@ -51,7 +51,7 @@ export default function CareTeam() {
           <section>
             <SectionTitle title="Caregivers" icon={<HeartHandshake className="h-5 w-5 text-primary" />} />
             <ul className="space-y-3">
-              {d.caregivers.length === 0 && <p className="text-sm text-ink-3">No caregivers yet. Invite someone you trust — they'll use their own account.</p>}
+              {d.caregivers.length === 0 && <p className="text-sm text-ink-3">No caregivers yet.</p>}
               {d.caregivers.map((c: any) => (
                 <li key={c.id} className="card p-4">
                   <div className="flex flex-wrap items-center gap-3">

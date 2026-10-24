@@ -44,11 +44,11 @@ export function RxStatus({ status }: { status: string }) {
 }
 
 const PROV: Record<string, { label: string; tone: Tone; icon: ReactNode }> = {
-  clinician_verified: { label: "Clinician verified", tone: "ok", icon: <BadgeCheck className="h-3.5 w-3.5" /> },
+  clinician_verified: { label: "Doctor verified", tone: "ok", icon: <BadgeCheck className="h-3.5 w-3.5" /> },
   imported: { label: "Imported", tone: "info", icon: <HelpCircle className="h-3.5 w-3.5" /> },
   ocr_extracted: { label: "OCR — unverified", tone: "warn", icon: <FileScan className="h-3.5 w-3.5" /> },
   patient_reported: { label: "Patient reported", tone: "primary", icon: <UserRound className="h-3.5 w-3.5" /> },
-  demo: { label: "Demo data", tone: "neutral", icon: <CircleDashed className="h-3.5 w-3.5" /> },
+  demo: { label: "Imported", tone: "neutral", icon: <CircleDashed className="h-3.5 w-3.5" /> },
 };
 
 export function Provenance({ value }: { value: string }) {

@@ -24,8 +24,8 @@ export default function AdminHome() {
         actions={<><Link to="/admin/audit"><Button variant="outline">Audit log</Button></Link><Button onClick={() => setStaff(true)} icon={<UserPlus className="h-4 w-4" />}>Add care coordinator</Button></>} />
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card p-5">
-          <SectionTitle title="Clinician verification queue" icon={<Stethoscope className="h-5 w-5 text-primary" />} />
-          {docs.isLoading ? <Skeleton className="h-24" /> : docs.data.length === 0 ? <EmptyState title="No pending clinicians" /> : (
+          <SectionTitle title="Doctor verification queue" icon={<Stethoscope className="h-5 w-5 text-primary" />} />
+          {docs.isLoading ? <Skeleton className="h-24" /> : docs.data.length === 0 ? <EmptyState title="No pending doctors" /> : (
             <ul className="space-y-3">{docs.data.map((d: any) => (
               <li key={d.user_id} className="rounded-xl border border-line p-3 text-sm">
                 <p className="font-semibold">{d.name} <span className="font-normal text-ink-3">· {d.speciality}</span></p>

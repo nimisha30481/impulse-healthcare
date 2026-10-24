@@ -37,9 +37,12 @@ def test_role_cannot_be_escalated_at_registration():
     assert r.status_code == 422
 
 
-def test_unverified_doctor_has_no_clinical_access():
+def test_new_doctor_works_immediately_but_sees_no_patients_without_access(db):
+    # the council registration number is the check: no staff verification step
     doc_api, doc = register("doctor", speciality="Cardiology", registration_number="R-9")
-    assert doc_api.get("/api/doctor/dashboard").status_code == 403
+    assert doc_api.get("/api/doctor/dashboard").status_code == 200
+    p_api, patient = register("patient")
+    assert doc_api.get(f"/api/patients/{patient['patient_id']}/records").status_code == 403
 
 
 def test_doctor_cannot_read_unrelated_patient_and_denial_is_audited(db):

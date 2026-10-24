@@ -6,11 +6,9 @@ import { Button, Field, Input } from "@/components/ui/primitives";
 import { Notice } from "@/components/ui/feedback";
 import { ReadOnlyChart } from "@/features/access/ReadOnlyChart";
 import { api, errorMessage } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
 
 /** Guest / One-Time Doctor Access: read-only record lookup with the patient's Access ID. */
 export default function GuestAccess() {
-  const { session } = useAuth();
   const [f, setF] = useState({ access_id: "", doctor_name: "", doctor_license: "", hospital: "" });
   const m = useMutation({ mutationFn: () => api.post("/api/access/guest-view", {
     access_id: f.access_id, doctor_name: f.doctor_name || null, doctor_license: f.doctor_license || null, hospital: f.hospital || null }) });
@@ -42,7 +40,6 @@ export default function GuestAccess() {
             </div>
           </details>
           <Button type="submit" size="lg" className="w-full" loading={m.isPending} disabled={!f.access_id.trim()} icon={<KeyRound className="h-5 w-5" />}>Unlock patient record</Button>
-          {session?.demo_enabled && <p className="text-center text-xs text-ink-3">Demo: try <code>DW-ANANYA</code></p>}
           <p className="text-center text-xs text-ink-3">Every attempt is logged with time and IP address, and the patient is notified. Registered doctor? <Link to="/login" className="link">Sign in</Link> to prescribe.</p>
         </form>
       </div>

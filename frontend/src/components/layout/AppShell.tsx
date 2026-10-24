@@ -79,7 +79,7 @@ function useNav(role: Role): NavItem[] {
 
 const ROLE_LABEL: Record<Role, { label: string; icon: ReactNode }> = {
   patient: { label: "Patient", icon: <Pill className="h-3 w-3" /> },
-  doctor: { label: "Clinician", icon: <Stethoscope className="h-3 w-3" /> },
+  doctor: { label: "Doctor", icon: <Stethoscope className="h-3 w-3" /> },
   caregiver: { label: "Caregiver", icon: <HeartHandshake className="h-3 w-3" /> },
   support: { label: "Care coordinator", icon: <LifeBuoy className="h-3 w-3" /> },
   admin: { label: "Administrator", icon: <ShieldAlert className="h-3 w-3" /> },
@@ -111,11 +111,6 @@ export function AppShell() {
           </NavLink>
         ))}
       </nav>
-      {user!.is_demo && (
-        <div className="m-3 rounded-xl border border-dashed border-line p-3 text-xs text-ink-3">
-          <b className="text-ink-2">Demo account.</b> All people and records are fictional.
-        </div>
-      )}
     </div>
   );
 
@@ -182,14 +177,20 @@ function UserMenu({ onLogout }: { onLogout: () => Promise<void> }) {
   const ref = useRef<HTMLDivElement>(null);
   const nav = useNavigate();
   const t = useT();
+  const leaveTimer = useRef<number>();
   useEffect(() => {
-    const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    // closes on a click or tap anywhere else, on Escape, and shortly after the pointer leaves the menu
+    const close = (e: Event) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", esc); window.clearTimeout(leaveTimer.current); };
   }, []);
   const r = ROLE_LABEL[user!.role];
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={ref}
+      onMouseEnter={() => window.clearTimeout(leaveTimer.current)}
+      onMouseLeave={() => { leaveTimer.current = window.setTimeout(() => setOpen(false), 300); }}>
       <button onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu"
         className="flex items-center gap-2 rounded-xl py-1 pl-1 pr-2 hover:bg-surface-2">
         <Avatar name={user!.full_name} color={user!.avatar_color} size={34} />
@@ -199,9 +200,9 @@ function UserMenu({ onLogout }: { onLogout: () => Promise<void> }) {
         </span>
         <ChevronDown className="h-4 w-4 text-ink-3" />
       </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div role="menu" initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6 }}
+      {/* no exit animation: the menu disappears the moment it closes */}
+      {open && (
+          <motion.div role="menu" initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             className="absolute right-0 mt-2 w-64 rounded-2xl border border-line bg-surface p-2 shadow-lift">
             <div className="px-3 py-2">
               <p className="truncate text-sm font-semibold">{user!.full_name}</p>
@@ -220,8 +221,7 @@ function UserMenu({ onLogout }: { onLogout: () => Promise<void> }) {
               <LogOut className="h-4 w-4" /> {t("nav.signOut")}
             </button>
           </motion.div>
-        )}
-      </AnimatePresence>
+      )}
     </div>
   );
 }

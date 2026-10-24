@@ -97,7 +97,7 @@ def confirm(body: ConfirmIn, user: User = Depends(current_user), db: Session = D
     appt = booking.confirm(db, user, acc.patient, body.hold_id, body.reason or (old.reason if old else None),
                            body.follow_up_id, rescheduled_from=old)
     if old:
-        booking.cancel(db, user, old, "Rescheduled")
+        booking.cancel(db, user, old, "Rescheduled", notify=False)
         old.status = "rescheduled"
     if body.follow_up_id:
         f = db.get(FollowUpInstruction, body.follow_up_id)

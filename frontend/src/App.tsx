@@ -71,7 +71,10 @@ export default function App() {
   const qc = useQueryClient();
   const persistLang = useCallback((language: string) => {
     if (!user) return;
-    api.patch("/api/account/preferences", { language }).then(() => qc.invalidateQueries({ queryKey: ["session"] })).catch(() => {});
+    // update the cached session in place: re-fetching it here could bring back an older theme
+    // that was saved a moment earlier and flip light/dark mode
+    qc.setQueryData(["session"], (s: any) => s?.user ? { ...s, user: { ...s.user, preferences: { ...s.user.preferences, language } } } : s);
+    api.patch("/api/account/preferences", { language }).catch(() => {});
   }, [user, qc]);
   useEffect(() => applyPreferences(prefs), [prefs]);
   useEffect(() => {

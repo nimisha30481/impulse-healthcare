@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, Info, RefreshCw, X, XCircle } from "lucide-react";
 import clsx from "clsx";
@@ -78,7 +79,9 @@ export function Modal({ open, onClose, title, children, footer, size = "md", lab
     };
   }, [open, onClose]);
   const width = { sm: "max-w-md", md: "max-w-lg", lg: "max-w-2xl", xl: "max-w-4xl" }[size];
-  return (
+  // Rendered at <body> level: a dialog opened from the blurred sticky header (e.g. Emergency) was
+  // otherwise positioned inside the header and cut off.
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
@@ -100,7 +103,8 @@ export function Modal({ open, onClose, title, children, footer, size = "md", lab
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

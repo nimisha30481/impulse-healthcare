@@ -26,7 +26,7 @@ export default function About() {
       </div>
       <p className="mt-12 rounded-2xl border border-dashed border-line p-5 text-sm text-ink-3">
         DoseWISE is under active development. It is not yet a certified medical device and makes no regulatory compliance
-        claims. All people, hospitals and records in the demo are fictional.
+        claims.
       </p>
     </div>
   );

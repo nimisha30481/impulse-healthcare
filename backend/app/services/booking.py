@@ -131,13 +131,22 @@ def confirm(db: Session, user: User, patient: PatientProfile, hold_id: str, reas
     db.flush()
     _ensure_doctor_access(db, patient.id, slot.doctor_user_id, user.id)
     doctor = db.get(User, slot.doctor_user_id)
-    local = slot.starts_at.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%a %d %b, %I:%M %p")
-    notifications.notify(db, patient.user, category="appointment_reminder", title="Appointment confirmed",
-                         body=f"{doctor.full_name} · {local}", patient_id=patient.id, link="/patient/appointments",
-                         dedupe_key=f"appt-confirm:{appt.id}")
-    notifications.notify(db, doctor, category="appointment_reminder", title="New appointment booked",
-                         body=f"{patient.user.full_name} · {local}", patient_id=patient.id,
-                         link="/doctor/appointments", dedupe_key=f"appt-new:{appt.id}")
+    local = _local(slot.starts_at)
+    if rescheduled_from:
+        moved = f"moved from {_local(rescheduled_from.starts_at)} to {local}"
+        notifications.notify(db, patient.user, category="appointment_reminder", title="Appointment rescheduled",
+                             body=f"{doctor.full_name} · {moved}", patient_id=patient.id, link="/patient/appointments",
+                             dedupe_key=f"appt-resched:{appt.id}")
+        notifications.notify(db, doctor, category="appointment_reminder", title="Appointment rescheduled",
+                             body=f"{patient.user.full_name} · {moved}", patient_id=patient.id,
+                             link="/doctor/appointments", dedupe_key=f"appt-resched-doc:{appt.id}")
+    else:
+        notifications.notify(db, patient.user, category="appointment_reminder", title="Appointment confirmed",
+                             body=f"{doctor.full_name} · {local}", patient_id=patient.id, link="/patient/appointments",
+                             dedupe_key=f"appt-confirm:{appt.id}")
+        notifications.notify(db, doctor, category="appointment_reminder", title="New appointment booked",
+                             body=f"{patient.user.full_name} · {local}", patient_id=patient.id,
+                             link="/doctor/appointments", dedupe_key=f"appt-new:{appt.id}")
     audit.record(db, action="appointment_booked", resource_type="appointment", resource_id=appt.id,
                  patient_id=patient.id, user=user)
     aws_services.publish_event("AppointmentBooked", {"appointment_id": appt.id})
@@ -158,7 +167,12 @@ def _ensure_doctor_access(db: Session, patient_id: str, doctor_id: str, granted_
                                    granted_by=granted_by, starts_at=utcnow(), expires_at=utcnow() + timedelta(days=90)))
 
 
-def cancel(db: Session, user: User, appt: Appointment, reason: str) -> None:
+def _local(dt) -> str:
+    return dt.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%a %d %b, %I:%M %p")
+
+
+def cancel(db: Session, user: User, appt: Appointment, reason: str, notify: bool = True) -> None:
+    """notify=False when the cancellation is part of a reschedule (that sends its own message)."""
     if appt.status != "confirmed":
         raise bad_request("Only confirmed appointments can be cancelled")
     if user.role != "doctor" and appt.starts_at - utcnow() < timedelta(hours=2):
@@ -169,9 +183,13 @@ def cancel(db: Session, user: User, appt: Appointment, reason: str) -> None:
     appt.history = [*appt.history, {"at": utcnow().isoformat(), "event": "cancelled", "by": user.id, "reason": reason}]
     if appt.slot_id:
         _release(db, appt.slot_id)
-    other = appt.doctor if user.id != appt.doctor_user_id else appt.patient.user
-    notifications.notify(db, other, category="appointment_reminder", title="Appointment cancelled",
-                         body=reason[:140], patient_id=appt.patient_id, dedupe_key=f"appt-cancel:{appt.id}:{other.id}")
+    if notify:  # both sides see it in their notifications, including whoever cancelled
+        when = _local(appt.starts_at)
+        for who, name, link in ((appt.patient.user, appt.doctor.full_name, "/patient/appointments"),
+                                (appt.doctor, appt.patient.user.full_name, "/doctor/appointments")):
+            notifications.notify(db, who, category="appointment_reminder", title="Appointment cancelled",
+                                 body=f"{name} · {when} · {reason[:100]}", patient_id=appt.patient_id, link=link,
+                                 dedupe_key=f"appt-cancel:{appt.id}:{who.id}")
     audit.record(db, action="appointment_cancelled", resource_type="appointment", resource_id=appt.id,
                  patient_id=appt.patient_id, user=user, reason=reason)
     realtime.queue(db, [appt.patient.user_id, appt.doctor_user_id], "appointments", appt.patient_id, appt.id)

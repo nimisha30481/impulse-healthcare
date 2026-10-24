@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import access, account, appointments, auth, care, doctor, misc, patients, support
+from app.api import access, account, appointments, auth, care, doctor, i18n, misc, patients, support
 from app.core.config import get_settings
 from app.core.database import SessionLocal
 from app.core.migrate import upgrade_to_head
@@ -84,7 +84,7 @@ async def validation_handler(request: Request, exc: RequestValidationError):
 
 
 for r in (access.router, auth.router, account.router, patients.router, care.router, doctor.router, appointments.router,
-          support.router, misc.router):
+          support.router, misc.router, i18n.router):
     app.include_router(r)
 
 

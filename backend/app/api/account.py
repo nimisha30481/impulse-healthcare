@@ -227,7 +227,6 @@ def export_data(request: Request, user: User = Depends(current_user), db: Sessio
 
 
 class CloseIn(BaseModel):
-    password: str
     confirm: str
 
 
@@ -235,8 +234,8 @@ class CloseIn(BaseModel):
 def close_account(body: CloseIn, response: Response, ctx: AuthContext = Depends(get_auth), db: Session = Depends(get_db)):
     """Closes sign-in immediately. Clinical records are retained for the configured legal retention
     period (see docs/DATA_GOVERNANCE.md) and are not deleted by this action."""
-    if body.confirm != "CLOSE" or not cognito.check_password(ctx.user, body.password):
-        raise HTTPException(400, "Type CLOSE and enter your password to confirm")
+    if body.confirm.strip().upper() != "CLOSE":
+        raise HTTPException(400, "Type CLOSE to confirm")
     ctx.user.closed_at = utcnow()
     ctx.user.is_active = False
     for s in db.execute(select(UserSession).where(UserSession.user_id == ctx.user.id)).scalars():

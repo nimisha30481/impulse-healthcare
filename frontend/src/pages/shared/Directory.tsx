@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Building2, Clock, FlaskConical, LocateFixed, MapPin, Navigation, Phone, Pill, Search, Stethoscope } from "lucide-react";
 import { Badge, Button, Input, Skeleton } from "@/components/ui/primitives";
 import { EmptyState, ErrorState, Notice } from "@/components/ui/feedback";
-import { DemoTag, PageHeader, Tabs } from "@/components/ui/domain";
+import { PageHeader, Tabs } from "@/components/ui/domain";
 import { api } from "@/lib/api";
 
 const KIND_ICON: Record<string, any> = { hospital: Building2, clinic: Stethoscope, pharmacy: Pill, laboratory: FlaskConical };
@@ -28,7 +28,7 @@ export default function Directory() {
   return (
     <div className="container-page max-w-6xl py-2">
       <PageHeader title="Find care" subtitle="Hospitals, pharmacies, laboratories and doctors. Location is optional — type a place instead if you prefer." />
-      <Notice tone="warn" title="Demonstration directory">Entries marked DEMO are fictional. Medicine stock is never shown unless a verified pharmacy integration supplies it.</Notice>
+      <Notice tone="info">Medicine stock is never shown unless a verified pharmacy integration supplies it. Call ahead to confirm availability.</Notice>
       <div className="my-5"><Tabs label="Directory type" value={kind} onChange={setKind} tabs={[{ id: "", label: "All" }, { id: "hospital", label: "Hospitals" }, { id: "pharmacy", label: "Pharmacies" }, { id: "laboratory", label: "Laboratories" }, { id: "doctors", label: "Doctors" }]} /></div>
       <div className="card mb-5 grid gap-3 p-4 md:grid-cols-[1.4fr_1fr_1fr_auto]">
         <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
@@ -43,7 +43,7 @@ export default function Directory() {
       {kind === "doctors" ? (
         docs.isLoading ? <Skeleton className="h-40" /> : (
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{docs.data?.map((d: any) => (
-            <li key={d.id} className="card p-4"><p className="font-bold">{d.name} {d.is_demo && <DemoTag />}</p><p className="text-sm text-ink-3">{d.speciality} · {d.organization ?? "Independent"}</p><p className="mt-1 text-xs text-ink-3">{d.languages?.join(", ")}</p></li>))}</ul>
+            <li key={d.id} className="card p-4"><p className="font-bold">{d.name}</p><p className="text-sm text-ink-3">{d.speciality} · {d.organization ?? "Independent"}</p><p className="mt-1 text-xs text-ink-3">{d.languages?.join(", ")}</p></li>))}</ul>
         )
       ) : orgs.isError ? <ErrorState error={orgs.error} /> : orgs.isLoading ? <Skeleton className="h-64" /> : orgs.data.results.length === 0 ? <EmptyState icon={<MapPin className="h-6 w-6" />} title="No results" /> : (
         <>
@@ -56,7 +56,7 @@ export default function Directory() {
                   <div className="flex items-start gap-3">
                     <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary-soft text-primary"><Icon className="h-5 w-5" /></span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2"><p className="font-bold">{o.name}</p>{o.data_source === "demo" ? <DemoTag /> : o.is_verified && <Badge tone="ok">Verified</Badge>}</div>
+                      <div className="flex flex-wrap items-center gap-2"><p className="font-bold">{o.name}</p>{o.is_verified && <Badge tone="ok">Verified</Badge>}</div>
                       <p className="text-sm text-ink-3">{o.address}, {o.city}</p>
                     </div>
                     {o.distance_km != null && <Badge tone="info">{o.distance_km} km</Badge>}

@@ -6,7 +6,6 @@ import { Button, Input, Select, Skeleton } from "@/components/ui/primitives";
 import { ConfirmDialog, EmptyState, ErrorState, Notice, useToast } from "@/components/ui/feedback";
 import { DoseStateBadge } from "./ReadOnlyChart";
 import { api, errorMessage } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, fmtTime } from "@/lib/format";
 
 /** Patient dashboard: their Patient Access ID with copy and regenerate. */
@@ -49,7 +48,6 @@ export function AccessIdUnlock({ compact }: { compact?: boolean }) {
   const [code, setCode] = useState("");
   const nav = useNavigate();
   const qc = useQueryClient();
-  const { session } = useAuth();
   const m = useMutation({ mutationFn: () => api.post("/api/doctor/access-id", { access_id: code }),
     onSuccess: (r) => { qc.invalidateQueries({ queryKey: ["doctor-patients"] }); qc.invalidateQueries({ queryKey: ["doctor-dashboard"] }); nav(`/doctor/patients/${r.patient_id}`); } });
   const submit = (e: FormEvent) => { e.preventDefault(); if (code.trim()) m.mutate(); };
@@ -67,7 +65,6 @@ export function AccessIdUnlock({ compact }: { compact?: boolean }) {
         </Button>
       </form>
       {m.isError && <div className="mt-3 text-left"><Notice tone="danger">{errorMessage(m.error)}</Notice></div>}
-      {session?.demo_enabled && <p className="mt-2 text-xs text-ink-3">Demo: try DW-ANANYA or DW-RAHULV</p>}
     </section>
   );
 }

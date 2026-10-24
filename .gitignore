@@ -164,3 +164,4 @@ cdk.out/
 
 # dev server logs (scripts/dev.mjs)
 logs/
+*.before-reset

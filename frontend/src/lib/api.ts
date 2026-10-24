@@ -49,7 +49,9 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
     } catch {
       /* non-JSON error */
     }
-    if (res.status === 401 && !url.includes("/api/auth/")) {
+    // 401: signed out. 403: possibly a different account signed in from another tab. Either way the
+    // app re-checks who is signed in (cheap) so it never keeps showing a stale user.
+    if ((res.status === 401 || res.status === 403) && !url.includes("/api/auth/")) {
       window.dispatchEvent(new CustomEvent("impulse:unauthorized"));
     }
     throw new ApiError(res.status, msg, fields);

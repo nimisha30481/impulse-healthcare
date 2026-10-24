@@ -98,7 +98,7 @@ export function Timeline({ patientId, canRequestCorrection }: { patientId: strin
         )}
       <Modal open={!!correct} onClose={() => setCorrect(null)} title="Request a correction" size="sm"
         footer={<><Button variant="outline" onClick={() => setCorrect(null)}>Cancel</Button><Button onClick={() => corr.mutate()} disabled={text.length < 10} loading={corr.isPending}>Send request</Button></>}>
-        <p className="text-sm text-ink-2">Describe what's wrong in <b>{correct?.title}</b>. Your clinician reviews it; the original stays in your history with an amendment trail — nothing is silently overwritten.</p>
+        <p className="text-sm text-ink-2">Describe what's wrong in <b>{correct?.title}</b>. Your doctor reviews it; the original stays in your history with an amendment trail — nothing is silently overwritten.</p>
         <Textarea className="mt-3" aria-label="Correction details" value={text} onChange={(e) => setText(e.target.value)} />
       </Modal>
     </div>
@@ -182,7 +182,7 @@ function HealthOverview({ patientId }: { patientId: string }) {
           <div className="sm:col-span-2"><Field label="Anything else your care team should know">{(p) => <Textarea {...p} value={form.patient_reported_notes ?? ""} onChange={(e) => setForm({ ...form, patient_reported_notes: e.target.value })} />}</Field></div>
           <div className="sm:col-span-2"><Checkbox checked={!!form.emergency_info_shareable} onChange={(v) => setForm({ ...form, emergency_info_shareable: v })} label="Allow sharing this emergency information when I trigger an emergency alert" /></div>
         </div>
-        <Notice tone="info">Details you add are labelled "Patient reported" so clinicians can tell them apart from verified records.</Notice>
+        <Notice tone="info">Details you add are labelled "Patient reported" so doctors can tell them apart from verified records.</Notice>
       </Modal>
     </div>
   );
@@ -221,7 +221,6 @@ function Documents({ patientId, openUpload }: { patientId: string; openUpload: b
                 <p className="truncate font-semibold">{d.title}</p>
                 <p className="text-xs text-ink-3">{titleCase(d.category)} · {(d.size_bytes / 1024).toFixed(0)} KB · {fmtDate(d.created_at)}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {d.is_demo && <Badge>Demo file</Badge>}
                   {d.ocr_status && <Badge tone={d.ocr_status === "verified" ? "ok" : d.ocr_status === "rejected" ? "danger" : "warn"}>
                     {d.ocr_status === "extracted" ? "Needs your review" : d.ocr_status === "patient_reviewed" ? "Awaiting doctor verification" : titleCase(d.ocr_status)}</Badge>}
                 </div>
@@ -247,6 +246,8 @@ function UploadDialog({ patientId, open, onClose, onOcr }: { patientId: string; 
   const [err, setErr] = useState<string | null>(null);
   const qc = useQueryClient();
   const toast = useToast();
+  // every time the dialog opens it starts fresh (so the notice below is always seen)
+  useEffect(() => { if (open) { setFile(null); setTitle(""); setCategory("prescription"); setErr(null); } }, [open]);
   const m = useMutation({
     mutationFn: () => {
       const fd = new FormData();
@@ -287,7 +288,7 @@ function UploadDialog({ patientId, open, onClose, onOcr }: { patientId: string; 
             <option value="prescription">Prescription (will be checked by a doctor)</option><option value="lab_report">Lab report</option>
             <option value="discharge_summary">Discharge summary</option><option value="other">Other</option></Select>}</Field>
         </div>
-        {category === "prescription" && <Notice tone="info">We'll try to read the prescription. You review the details, then a doctor verifies them. Nothing becomes an active medicine or reminder until a doctor approves it.</Notice>}
+        <Notice tone="warn" title="Before you upload">Upload only your own documents. A prescription you upload is checked by a doctor first: nothing becomes an active medicine or reminder until a doctor approves it.</Notice>
       </div>
     </Modal>
   );
