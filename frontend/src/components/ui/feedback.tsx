@@ -56,12 +56,17 @@ export function Modal({ open, onClose, title, children, footer, size = "md", lab
   open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; size?: "sm" | "md" | "lg" | "xl"; labelledBy?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Callers usually pass a new onClose function on every render; keeping it in a ref means the effect
+  // below runs only when the dialog opens. (Re-running it on each keystroke moved the cursor back to
+  // the first field, so typing in any other field landed in the first one.)
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
     const t = setTimeout(() => ref.current?.querySelector<HTMLElement>("input,select,textarea,button:not([data-close])")?.focus(), 50);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") closeRef.current();
       if (e.key === "Tab" && ref.current) {
         const els = ref.current.querySelectorAll<HTMLElement>("a,button,input,select,textarea,[tabindex]:not([tabindex='-1'])");
         const first = els[0], last = els[els.length - 1];
@@ -77,7 +82,7 @@ export function Modal({ open, onClose, title, children, footer, size = "md", lab
       document.body.style.overflow = "";
       prev?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
   const width = { sm: "max-w-md", md: "max-w-lg", lg: "max-w-2xl", xl: "max-w-4xl" }[size];
   // Rendered at <body> level: a dialog opened from the blurred sticky header (e.g. Emergency) was
   // otherwise positioned inside the header and cut off.
