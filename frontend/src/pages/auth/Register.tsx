@@ -41,6 +41,7 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [exists, setExists] = useState(false);
   const [legal, setLegal] = useState<"terms" | "privacy" | null>(null);
   const ref = useQuery({ queryKey: ["reference"], queryFn: () => api.get("/api/reference"), staleTime: Infinity });
   const set = (k: string) => (e: any) => setForm({ ...form, [k]: e.target.value });
@@ -64,6 +65,7 @@ export default function Register() {
     } catch (err) {
       if (err instanceof ApiError) setErrors(err.fields);
       setError(errorMessage(err));
+      setExists(err instanceof ApiError && err.status === 409);
     } finally {
       setBusy(false);
     }
@@ -105,7 +107,8 @@ export default function Register() {
           <span className="block text-xs text-ink-3">View a patient's record read-only with their Access ID. No sign-up needed.</span></span>
       </Link>
       <form onSubmit={submit} className="space-y-5" noValidate>
-        {error && <Notice tone="danger">{error}</Notice>}
+        {error && <Notice tone="danger">{error}{exists && <span className="mt-2 flex gap-4 font-semibold">
+          <Link to="/login" className="link">Sign in</Link><Link to="/forgot-password" className="link">Forgot password</Link></span>}</Notice>}
         <fieldset>
           <legend className="label mb-2">I am a… <span className="text-danger">*</span></legend>
           <div className="grid gap-2 sm:grid-cols-2">

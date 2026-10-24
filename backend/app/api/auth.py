@@ -143,11 +143,17 @@ class RegisterIn(BaseModel):
     registration_council: str | None = None
 
 
-def _resend_quietly(email: str) -> None:
+ALREADY_REGISTERED = ("An account with this email already exists and is verified. Please sign in, "
+                      "or use \"Forgot password\" if you don't remember the password.")
+
+
+def _resend_quietly(email: str) -> bool:
+    """Emails a fresh code; False when Cognito says the account is already confirmed (no code to send)."""
     try:
         cognito.resend_code(email)
-    except cognito.CognitoError:
-        pass  # already confirmed or throttled: the response must look the same either way
+    except cognito.CognitoError as e:
+        return e.code not in ("InvalidParameterException", "NotAuthorizedException")  # "already confirmed"
+    return True
 
 
 @router.post("/register")
@@ -165,9 +171,13 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
                {"status": "check_email", "message": "If this email can be registered, we've sent a verification link."})
     existing = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
     if existing:
-        if cognito.is_cognito_user(existing) and not existing.email_verified:
+        # A verified account gets no new code, so say so plainly instead of "a code is on its way"
+        # (a clear message here matters more to users than hiding which emails are registered).
+        if existing.email_verified:
+            raise HTTPException(409, ALREADY_REGISTERED)
+        if cognito.is_cognito_user(existing):
             _resend_quietly(email)  # signing up again = "send me a fresh code"
-        return pending  # same response as success to avoid account enumeration
+        return pending
     # checked before the Cognito account exists (the full doctor checks run again below)
     if use_cognito and body.role == "doctor" and (body.speciality not in SPECIALITIES
                                                   or body.registration_council not in COUNCILS):
@@ -178,7 +188,8 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
             sub = cognito.sign_up(email, body.password, body.full_name.strip(), body.phone)
         except cognito.CognitoError as e:
             if e.code == "UsernameExistsException":
-                _resend_quietly(email)
+                if not _resend_quietly(email):
+                    raise HTTPException(409, ALREADY_REGISTERED)
                 return pending
             raise e.http()
     user = User(email=email, phone=body.phone, role=body.role, cognito_sub=sub,
@@ -246,6 +257,8 @@ def resend_verification(body: ResendIn, request: Request, db: Session = Depends(
     rate_limit(f"resend:{body.email.lower()}", 3, 3600)
     user = db.execute(select(User).where(User.email == body.email.lower())).scalar_one_or_none()
     out = {}
+    if user and user.email_verified:
+        raise HTTPException(409, "This email is already verified. You can sign in now.")
     if user and not user.email_verified and cognito.is_cognito_user(user):
         try:
             cognito.resend_code(user.email)

@@ -118,3 +118,14 @@ def test_local_accounts_still_sign_in_when_cognito_is_on(idp):
     r = Api().post("/api/auth/login", {"email": me["email"], "password": PASSWORD})
     assert r.status_code == 200
     assert not [c for c in idp.calls if c[0] == "initiate_auth"]
+
+
+def test_registering_a_verified_email_again_says_so(idp):
+    api, email = Api(), "already.here@example.com"
+    body = {"role": "patient", "full_name": "Already Here", "email": email, "password": PASSWORD,
+            "phone": PHONE, "accept_terms": True}
+    api.post("/api/auth/register", body)
+    api.post("/api/auth/verify-email", {"email": email, "code": "123456"})
+    r = Api().post("/api/auth/register", body)
+    assert r.status_code == 409 and "already exists" in r.json()["detail"]
+    assert Api().post("/api/auth/resend-verification", {"email": email}).status_code == 409
