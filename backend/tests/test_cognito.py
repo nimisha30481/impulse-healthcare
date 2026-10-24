@@ -62,42 +62,54 @@ def idp(monkeypatch):
     return fake
 
 
-def test_cognito_signup_verify_login_and_reset(idp):
+def _cognito_user(idp, email):
+    """An account that already lives in Cognito (created before sign-up stopped using email codes)."""
+    from app.core.database import SessionLocal
+    from app.models import PatientProfile, User
+    from app.services.access_ids import new_access_id
+
+    idp.users[email] = {"pw": PASSWORD, "confirmed": True, "sub": "sub-" + email}
+    db = SessionLocal()
+    u = User(email=email, role="patient", full_name="Cognito User", phone=PHONE, cognito_sub="sub-" + email,
+             email_verified=True, preferences={})
+    db.add(u)
+    db.flush()
+    db.add(PatientProfile(user_id=u.id, mrn="C-" + u.id[:6], access_id=new_access_id(db)))
+    db.commit()
+    db.close()
+
+
+def test_sign_up_signs_in_immediately_without_an_email_code(idp):
     api, email = Api(), "new.patient@example.com"
     body = {"role": "patient", "full_name": "New Patient", "email": email, "password": PASSWORD,
             "phone": PHONE, "accept_terms": True}
     r = api.post("/api/auth/register", body)
-    assert r.json()["status"] == "verify_code" and "dev_link" not in r.json()
-    sent = idp.calls[0][1]
-    assert sent["SecretHash"] and {"Name": "phone_number", "Value": "+919876543210"} in sent["UserAttributes"]
-    # duplicate sign-up looks identical (no account enumeration) and emails a fresh code
-    assert api.post("/api/auth/register", body).json()["status"] == "verify_code"
-    assert idp.calls[-1][0] == "resend_confirmation_code"
+    assert r.status_code == 200 and r.json()["status"] == "signed_in"
+    assert api.get("/api/auth/me").json()["patient_id"]  # signed in straight away
+    assert not idp.calls  # no Cognito sign-up, so no code email
+    assert Api().post("/api/auth/login", {"email": email, "password": PASSWORD}).status_code == 200
 
-    assert api.post("/api/auth/login", {"email": email, "password": PASSWORD}).status_code == 403  # code not entered
-    assert api.post("/api/auth/verify-email", {"email": email, "code": "000000"}).status_code == 400
-    assert api.post("/api/auth/verify-email", {"email": email, "code": "123456"}).status_code == 200
-    assert api.post("/api/auth/login", {"email": email, "password": "Wrong_Pass1"}).status_code == 401
-    r = api.post("/api/auth/login", {"email": email, "password": PASSWORD})
+
+def test_existing_cognito_accounts_sign_in_and_reset(idp):
+    email = "cognito.user@example.com"
+    _cognito_user(idp, email)
+    assert Api().post("/api/auth/login", {"email": email, "password": "Wrong_Pass1"}).status_code == 401
+    r = Api().post("/api/auth/login", {"email": email, "password": PASSWORD})
     assert r.status_code == 200 and r.json()["user"]["email"] == email
-    assert api.get("/api/auth/me").json()["patient_id"]
-
     assert Api().post("/api/auth/forgot-password", {"email": email}).json()["status"] == "code_sent"
     assert Api().post("/api/auth/reset-password", {"email": email, "code": "654321", "password": "N3w_Passw0rd"}).status_code == 200
     assert Api().post("/api/auth/login", {"email": email, "password": "N3w_Passw0rd"}).status_code == 200
 
 
 def test_token_check_failure_is_a_clear_503_not_a_crash(idp, monkeypatch):
-    api, email = Api(), "token.check@example.com"
-    api.post("/api/auth/register", {"role": "patient", "full_name": "Token Check", "email": email, "password": PASSWORD,
-                                    "phone": PHONE, "accept_terms": True})
-    api.post("/api/auth/verify-email", {"email": email, "code": "123456"})
+    email = "token.check@example.com"
+    _cognito_user(idp, email)
 
     def boom(token):
         raise RuntimeError("JWKS unreachable")
 
     monkeypatch.setattr(cognito, "verify_id_token", boom)
-    r = api.post("/api/auth/login", {"email": email, "password": PASSWORD})
+    r = Api().post("/api/auth/login", {"email": email, "password": PASSWORD})
     assert r.status_code == 503 and "temporarily unavailable" in r.json()["detail"]
 
 
@@ -124,8 +136,7 @@ def test_registering_a_verified_email_again_says_so(idp):
     api, email = Api(), "already.here@example.com"
     body = {"role": "patient", "full_name": "Already Here", "email": email, "password": PASSWORD,
             "phone": PHONE, "accept_terms": True}
-    api.post("/api/auth/register", body)
-    api.post("/api/auth/verify-email", {"email": email, "code": "123456"})
+    assert api.post("/api/auth/register", body).json()["status"] == "signed_in"
     r = Api().post("/api/auth/register", body)
     assert r.status_code == 409 and "already exists" in r.json()["detail"]
     assert Api().post("/api/auth/resend-verification", {"email": email}).status_code == 409

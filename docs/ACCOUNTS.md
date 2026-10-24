@@ -3,8 +3,9 @@
 Created by `python -m app.seed` (see `backend/app/seed.py`). Every person and organisation is fictional.
 **Password for every account below: `Dosewise_2026`**
 
-These accounts sign in with DoseWISE's own password check (they were created before Cognito, so no
-email code is needed). Accounts you register yourself on the website use Amazon Cognito as before.
+These accounts sign in with DoseWISE's own password check. New accounts created on the website also sign in
+straight away after Create account (no email code). Accounts that were created in Amazon Cognito earlier keep
+signing in through Cognito.
 
 ## Doctors (all Karnataka Medical Council, active immediately)
 

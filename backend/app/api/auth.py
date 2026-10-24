@@ -157,69 +157,54 @@ def _resend_quietly(email: str) -> bool:
 
 
 @router.post("/register")
-def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
+def register(body: RegisterIn, request: Request, response: Response, db: Session = Depends(get_db)):
+    """Creates the account and signs the person straight in: no email-code step. Passwords are stored as
+    argon2 hashes. (New Cognito accounts would need an emailed code before first sign-in, which AWS only
+    lets us skip with the AdminConfirmSignUp permission; accounts already in Cognito keep signing in there.)"""
     rate_limit(f"register:{client_ip(request)}", 5, 3600)
     if not body.accept_terms:
         raise HTTPException(400, "Please accept the terms to continue")
     if err := validate_password_strength(body.password):
         raise HTTPException(400, err)
     email = body.email.lower()
-    use_cognito = cognito.enabled()
-    pending = ({"status": "verify_code", "email": email,
-                "message": "If this email can be registered, we've emailed it a 6-digit verification code."}
-               if use_cognito else
-               {"status": "check_email", "message": "If this email can be registered, we've sent a verification link."})
-    existing = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
-    if existing:
-        # A verified account gets no new code, so say so plainly instead of "a code is on its way"
-        # (a clear message here matters more to users than hiding which emails are registered).
-        if existing.email_verified:
-            raise HTTPException(409, ALREADY_REGISTERED)
-        if cognito.is_cognito_user(existing):
-            _resend_quietly(email)  # signing up again = "send me a fresh code"
-        return pending
-    # checked before the Cognito account exists (the full doctor checks run again below)
-    if use_cognito and body.role == "doctor" and (body.speciality not in SPECIALITIES
-                                                  or body.registration_council not in COUNCILS):
-        raise HTTPException(400, "Choose a speciality and medical council from the lists")
-    sub = None
-    if use_cognito:
-        try:
-            sub = cognito.sign_up(email, body.password, body.full_name.strip(), body.phone)
-        except cognito.CognitoError as e:
-            if e.code == "UsernameExistsException":
-                if not _resend_quietly(email):
-                    raise HTTPException(409, ALREADY_REGISTERED)
-                return pending
-            raise e.http()
-    user = User(email=email, phone=body.phone, role=body.role, cognito_sub=sub,
-                password_hash=None if use_cognito else hash_password(body.password),
-                full_name=body.full_name.strip(), preferences={"language": "en", "theme": "system"})
-    db.add(user)
-    db.flush()
-    if body.role == "patient":
-        db.add(PatientProfile(user_id=user.id, mrn=f"IMP-{user.id[:8].upper()}", access_id=new_access_id(db),
-                              access_id_created_at=utcnow()))
-    elif body.role == "caregiver":
-        db.add(CaregiverProfile(user_id=user.id))
-    elif body.role == "doctor":
+    if body.role == "doctor":
         if body.speciality not in SPECIALITIES:
             raise HTTPException(400, "Choose a speciality from the list")
         if body.registration_council not in COUNCILS:
             raise HTTPException(400, "Choose the medical council you are registered with")
         if not body.registration_number or not re.fullmatch(r"[A-Za-z0-9/\-]{3,40}", body.registration_number.strip()):
             raise HTTPException(400, "Enter your medical registration number (letters, numbers, / or -)")
+    user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    if user and user.email_verified:
+        raise HTTPException(409, ALREADY_REGISTERED)
+    if user:
+        # an earlier sign-up that never finished its email code: take it over with the new details
+        user.cognito_sub, user.role = None, body.role
+    else:
+        user = User(email=email, role=body.role)
+        db.add(user)
+    user.phone, user.full_name = body.phone, body.full_name.strip()
+    user.password_hash, user.email_verified = hash_password(body.password), True
+    user.preferences = user.preferences or {"language": "en", "theme": "system"}
+    db.flush()
+    if body.role == "patient" and not user.patient_profile:
+        db.add(PatientProfile(user_id=user.id, mrn=f"IMP-{user.id[:8].upper()}", access_id=new_access_id(db),
+                              access_id_created_at=utcnow()))
+    elif body.role == "caregiver" and not getattr(user, "caregiver_profile", None):
+        db.add(CaregiverProfile(user_id=user.id))
+    elif body.role == "doctor" and not user.doctor_profile:
         db.add(DoctorProfile(user_id=user.id, speciality=body.speciality,
                              registration_number=body.registration_number,
                              registration_council=body.registration_council,
                              # the council registration number is the check; doctors start working straight away
                              verification_status="verified", verified_at=utcnow()))
-    out = {} if use_cognito else _send_link(db, user, "verify_email", _issue_token(db, user, "verify_email", 24))
-    audit.record(db, action="account_registered", resource_type="user", resource_id=user.id, user=user,
-                 reason="cognito" if use_cognito else None)
+    db.flush()
+    _start_session(db, response, request, user, mfa_passed=True)  # a brand-new account has no MFA
+    audit.record(db, action="account_registered", resource_type="user", resource_id=user.id, user=user)
     _sec_event(db, request, "registered", user)
     db.commit()
-    return {**pending, **out}
+    db.refresh(user)
+    return {"status": "signed_in", "user": user_out(user)}
 
 
 class VerifyIn(BaseModel):

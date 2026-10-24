@@ -72,8 +72,7 @@ def register(role="patient", email=None, **extra) -> tuple[Api, dict]:
         body.setdefault("registration_council", COUNCIL)
     r = api.post("/api/auth/register", body)
     assert r.status_code == 200, r.text
-    token = r.json()["dev_link"].split("token=")[1]
-    assert api.post("/api/auth/verify-email", {"token": token}).status_code == 200
+    assert r.json()["status"] == "signed_in"  # no email-code step; already signed in
     r = api.post("/api/auth/login", {"email": email, "password": PASSWORD})
     assert r.status_code == 200, r.text
     me = api.get("/api/auth/me").json()

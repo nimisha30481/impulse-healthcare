@@ -1,7 +1,7 @@
 ﻿from conftest import PASSWORD, PHONE, Api, grant_doctor, make_doctor, register
 
 
-def test_registration_requires_verification_and_strong_password():
+def test_registration_needs_a_strong_password_and_then_signs_in():
     api = Api()
     base = {"role": "patient", "full_name": "A B", "email": "a@example.com", "phone": PHONE, "accept_terms": True}
     for weak in ("password123", "Passw0rd!", "Sh0rt_a"):  # no upper/special · '!' not allowed · too short
@@ -11,8 +11,8 @@ def test_registration_requires_verification_and_strong_password():
                                            "password": PASSWORD}).status_code == 422
     r = api.post("/api/auth/register", {**base, "password": PASSWORD})
     assert r.status_code == 200
-    login = api.post("/api/auth/login", {"email": "a@example.com", "password": PASSWORD})
-    assert login.status_code == 403  # email not verified yet
+    assert r.json()["status"] == "signed_in"  # straight to the dashboard, no email-code step
+    assert api.post("/api/auth/login", {"email": "a@example.com", "password": PASSWORD}).status_code == 200
 
 
 def test_login_wrong_password_and_lockout():

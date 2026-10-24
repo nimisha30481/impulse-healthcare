@@ -13,7 +13,7 @@ DoseWISE is one shared, versioned medication record that follows the patient. Do
 
 **AWS architecture (35 s)**
 Eleven AWS services are live in Mumbai, ap-south-1, and each one is tested:
-- **Cognito** signs users in, with email verification codes and two-step verification (MFA).
+- **Cognito** holds the identities of existing Cognito accounts (email codes, optional two-step verification). New sign-ups go straight to the dashboard.
 - **DynamoDB** keeps an idempotent mirror of every dose event.
 - Uploaded documents go to **S3**, encrypted with **KMS**.
 - **EventBridge** carries domain events, and **Step Functions** records every interaction-check workflow.

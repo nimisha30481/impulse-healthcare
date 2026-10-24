@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MailCheck, Pill, Stethoscope } from "lucide-react";
 import clsx from "clsx";
 import { AuthCard } from "./AuthCard";
@@ -10,6 +10,7 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Modal, Notice } from "@/components/ui/feedback";
 import { LegalText } from "@/pages/public/InfoPage";
 import { api, ApiError, errorMessage } from "@/lib/api";
+import { homeFor } from "@/lib/auth";
 import { PASSWORD_RULES, registerSchema, zodErrors } from "@/lib/schemas";
 
 /** Red message listing the rules a typed password still misses (shown as soon as the field is left). */
@@ -41,6 +42,8 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const nav = useNavigate();
+  const qc = useQueryClient();
   const [exists, setExists] = useState(false);
   const [legal, setLegal] = useState<"terms" | "privacy" | null>(null);
   const ref = useQuery({ queryKey: ["reference"], queryFn: () => api.get("/api/reference"), staleTime: Infinity });
@@ -60,7 +63,15 @@ export default function Register() {
     try {
       const { confirm: _c, ...body } = form;
       if (body.role !== "doctor") { delete body.speciality; delete body.registration_council; delete body.registration_number; }
-      setDone(await api.post("/api/auth/register", body));
+      const r = await api.post("/api/auth/register", body);
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      if (r.status === "signed_in") {
+        // account created and signed in: straight to the dashboard (no email-code step)
+        await qc.refetchQueries({ queryKey: ["session"] });
+        nav(homeFor(r.user.role), { replace: true });
+        return;
+      }
+      setDone(r);
       try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     } catch (err) {
       if (err instanceof ApiError) setErrors(err.fields);
